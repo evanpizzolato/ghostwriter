@@ -434,6 +434,31 @@ function createMenu() {
         {
           label: '  Font -: Cmd+Shift+Minus',
           enabled: false
+        },
+        { type: 'separator' },
+        {
+          label: 'Text Formatting:',
+          enabled: false
+        },
+        {
+          label: '  Bold: Cmd+B',
+          enabled: false
+        },
+        {
+          label: '  Italic: Cmd+I',
+          enabled: false
+        },
+        {
+          label: '  Underline: Cmd+U',
+          enabled: false
+        },
+        {
+          label: '  Bullet List: Cmd+L',
+          enabled: false
+        },
+        {
+          label: '  Number List: Cmd+D',
+          enabled: false
         }
       ]
     }

@@ -80,6 +80,9 @@ function insertTextFormat(startTag, endTag, placeholder) {
   
   // Trigger save
   textarea.dispatchEvent(new Event('input'))
+  
+  // NEW: Update button states after formatting
+  updateToolbarStates()
 }
 
 function insertListItem(prefix) {
@@ -101,6 +104,38 @@ function insertListItem(prefix) {
   
   // Trigger save
   textarea.dispatchEvent(new Event('input'))
+}
+
+// NEW: Update toolbar button states based on cursor position
+function updateToolbarStates() {
+  const textarea = document.getElementById('notes')
+  const cursorPos = textarea.selectionStart
+  const textBeforeCursor = textarea.value.substring(0, cursorPos)
+  const currentLine = textBeforeCursor.split('\n').pop()
+  
+  // Check for bold (**text**)
+  const boldBtn = document.getElementById('bold-btn')
+  const boldCount = (textBeforeCursor.match(/\*\*/g) || []).length
+  boldBtn.classList.toggle('active', boldCount % 2 === 1)
+  
+  // Check for italic (*text*)
+  const italicBtn = document.getElementById('italic-btn')
+  const italicMatches = textBeforeCursor.match(/\*(?!\*)/g) || []
+  const boldMatches = textBeforeCursor.match(/\*\*/g) || []
+  const singleAsterisks = italicMatches.length - (boldMatches.length * 2)
+  italicBtn.classList.toggle('active', singleAsterisks % 2 === 1)
+  
+  // Check for underline (<u>text</u>)
+  const underlineBtn = document.getElementById('underline-btn')
+  const openU = (textBeforeCursor.match(/<u>/g) || []).length
+  const closeU = (textBeforeCursor.match(/<\/u>/g) || []).length
+  underlineBtn.classList.toggle('active', openU > closeU)
+  
+  // Check for list items
+  const bulletBtn = document.getElementById('bullet-btn')
+  const numberBtn = document.getElementById('number-btn')
+  bulletBtn.classList.toggle('active', currentLine.startsWith('• '))
+  numberBtn.classList.toggle('active', /^\d+\.\s/.test(currentLine))
 }
 
 // Function to update opacity
@@ -177,6 +212,52 @@ window.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('save-status').textContent = ''
       }, 2000)
     }, 500)
+  })
+
+  // NEW: Update toolbar states when cursor moves or text selection changes
+  textarea.addEventListener('selectionchange', updateToolbarStates)
+  textarea.addEventListener('keyup', updateToolbarStates)
+  textarea.addEventListener('mouseup', updateToolbarStates)
+
+  // NEW: Keyboard shortcuts for text formatting
+  textarea.addEventListener('keydown', (e) => {
+    // Check for Cmd/Ctrl key combinations
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+    const cmdKey = isMac ? e.metaKey : e.ctrlKey
+    
+    if (!cmdKey) return
+    
+    switch(e.key.toLowerCase()) {
+      case 'b':
+        e.preventDefault()
+        insertTextFormat('**', '**', 'bold text')
+        showNotification('Bold: Cmd+B')
+        break
+        
+      case 'i':
+        e.preventDefault()
+        insertTextFormat('*', '*', 'italic text')
+        showNotification('Italic: Cmd+I')
+        break
+        
+      case 'u':
+        e.preventDefault()
+        insertTextFormat('<u>', '</u>', 'underlined text')
+        showNotification('Underline: Cmd+U')
+        break
+        
+      case 'l':
+        e.preventDefault()
+        insertListItem('• ')
+        showNotification('Bullet List: Cmd+L')
+        break
+        
+      case 'd':
+        e.preventDefault()
+        insertListItem('1. ')
+        showNotification('Numbered List: Cmd+D')
+        break
+    }
   })
 
   // Opacity slider
