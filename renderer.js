@@ -152,6 +152,25 @@ function updateToolbarStates() {
   bulletBtn.classList.toggle('active', document.queryCommandState('insertUnorderedList'))
   numberBtn.classList.toggle('active', document.queryCommandState('insertOrderedList'))
 }
+function setFontSize(size) {
+  console.log('setFontSize called with:', size)
+  const editor = document.getElementById('notes')
+  editor.focus()
+  
+  // Convert pixel size to execCommand scale (1-7)
+  let commandSize
+  if (size <= 12) commandSize = 1
+  else if (size <= 14) commandSize = 2  
+  else if (size <= 16) commandSize = 3
+  else if (size <= 18) commandSize = 4
+  else if (size <= 24) commandSize = 5
+  else if (size <= 32) commandSize = 6
+  else commandSize = 7
+  
+  console.log('Using execCommand size:', commandSize)
+  const result = document.execCommand('fontSize', false, commandSize)
+  console.log('execCommand result:', result)
+}
 
 // Function to update opacity
 function updateOpacity(value) {
@@ -296,6 +315,22 @@ window.addEventListener('DOMContentLoaded', async () => {
     updateFontSize('increase')
     showNotification('Font size increased')
   })
+
+  // Font size dropdown
+ // Debug: Check if dropdown exists
+ const dropdown = document.getElementById('font-size-select')
+ console.log('Font size dropdown element:', dropdown)
+ 
+ if (dropdown) {
+   // Font size dropdown
+   dropdown.addEventListener('change', (e) => {
+     console.log('Dropdown changed to:', e.target.value)
+     const size = e.target.value
+     setFontSize(size)
+   })
+ } else {
+   console.log('ERROR: font-size-select element not found!')
+ }
 
   // File input for imports (hidden, triggered programmatically)
   const fileInput = document.createElement('input')
