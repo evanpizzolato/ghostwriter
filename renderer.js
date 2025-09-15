@@ -17,6 +17,8 @@ let currentOpacity = 1.0  // Default opacity
 //   }, 1500)
 // }
 
+
+
 // Function to download a file
 function downloadFile(content, filename, type = 'text/plain') {
   const blob = new Blob([content], { type })
@@ -55,6 +57,52 @@ function updateFontSize(direction) {
   textarea.style.fontSize = currentFontSize + 'px'
 }
 
+// NEW: Text formatting helper functions
+function insertTextFormat(startTag, endTag, placeholder) {
+  const textarea = document.getElementById('notes')
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const selectedText = textarea.value.substring(start, end)
+  
+  let replacement
+  if (selectedText) {
+    replacement = startTag + selectedText + endTag
+  } else {
+    replacement = startTag + placeholder + endTag
+  }
+  
+  textarea.value = textarea.value.substring(0, start) + replacement + textarea.value.substring(end)
+  
+  // Move cursor to end of inserted text
+  const newPosition = start + replacement.length
+  textarea.setSelectionRange(newPosition, newPosition)
+  textarea.focus()
+  
+  // Trigger save
+  textarea.dispatchEvent(new Event('input'))
+}
+
+function insertListItem(prefix) {
+  const textarea = document.getElementById('notes')
+  const start = textarea.selectionStart
+  const value = textarea.value
+  
+  // Find the start of current line
+  const lineStart = value.lastIndexOf('\n', start - 1) + 1
+  
+  // Insert the list prefix at the beginning of current line
+  const newText = value.substring(0, lineStart) + prefix + value.substring(lineStart)
+  textarea.value = newText
+  
+  // Move cursor after the prefix
+  const newPosition = start + prefix.length
+  textarea.setSelectionRange(newPosition, newPosition)
+  textarea.focus()
+  
+  // Trigger save
+  textarea.dispatchEvent(new Event('input'))
+}
+
 // Function to update opacity
 function updateOpacity(value) {
   currentOpacity = value
@@ -81,6 +129,12 @@ function updateOpacity(value) {
 
   // Notes wrapper with minimum 40% opacity
   notesWrapper.style.backgroundColor = `rgba(255, 255, 255, ${notesOpacity * 0.95})`
+
+    // NEW: Apply opacity to toolbar
+    const toolbar = document.querySelector('.text-toolbar')
+    if (toolbar) {
+      toolbar.style.backgroundColor = `rgba(248, 249, 250, ${value})`
+    }
 
   // If opacity is very low, enhance text readability
   if (value < 0.4) {
@@ -220,6 +274,28 @@ window.addEventListener('DOMContentLoaded', async () => {
     fileInput.accept = '.json'
     fileInput.click()
   })
+
+// NEW: Toolbar button functionality
+document.getElementById('bold-btn').addEventListener('click', () => {
+  insertTextFormat('**', '**', 'bold text')
+})
+
+document.getElementById('italic-btn').addEventListener('click', () => {
+  insertTextFormat('*', '*', 'italic text')
+})
+
+document.getElementById('underline-btn').addEventListener('click', () => {
+  insertTextFormat('<u>', '</u>', 'underlined text')
+})
+
+document.getElementById('bullet-btn').addEventListener('click', () => {
+  insertListItem('• ')
+})
+
+document.getElementById('number-btn').addEventListener('click', () => {
+  insertListItem('1. ')
+})
+
 })
 
 

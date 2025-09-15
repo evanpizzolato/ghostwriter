@@ -215,6 +215,52 @@
       /* Using rgba */
     }
 
+    /* Text editing toolbar */
+.text-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background-color: rgba(248, 249, 250, 1);
+  border-bottom: 1px solid var(--bg-tertiary);
+  margin-bottom: 8px;
+  border-radius: 6px 6px 0 0;
+  -webkit-app-region: no-drag;
+}
+
+.toolbar-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--bg-tertiary);
+  background-color: transparent;
+  color: var(--text-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.toolbar-btn:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--blue-primary);
+}
+
+.toolbar-btn.active {
+  background-color: var(--blue-primary);
+  color: white;
+  border-color: var(--blue-primary);
+}
+
+.toolbar-separator {
+  color: var(--text-muted);
+  margin: 0 4px;
+  font-size: 14px;
+}
+
     #notes-wrapper {
       width: 100%;
       height: 100%;
@@ -401,9 +447,21 @@
     </div>
   </div>
 
+  
+
   <div class="content">
     <!-- Notification toast -->
     <div id="notification"></div>
+
+    <!-- NEW: Text editing toolbar -->
+  <div class="text-toolbar">
+    <button class="toolbar-btn" id="bold-btn" title="Bold">B</button>
+    <button class="toolbar-btn" id="italic-btn" title="Italic">I</button>
+    <button class="toolbar-btn" id="underline-btn" title="Underline">U</button>
+    <span class="toolbar-separator">|</span>
+    <button class="toolbar-btn" id="bullet-btn" title="Bullet List">•</button>
+    <button class="toolbar-btn" id="number-btn" title="Numbered List">1.</button>
+  </div>
 
     <div id="notes-wrapper">
       <textarea id="notes"></textarea>
