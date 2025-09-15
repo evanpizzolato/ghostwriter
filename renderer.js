@@ -44,7 +44,7 @@ function readFile(file) {
 
 // Function to update font size
 function updateFontSize(direction) {
-  const textarea = document.getElementById('notes')
+  const editor = document.getElementById('notes')
 
   if (direction === 'increase') {
     currentFontSize = Math.min(currentFontSize + 2, 32)
@@ -54,88 +54,103 @@ function updateFontSize(direction) {
     currentFontSize = 18
   }
 
-  textarea.style.fontSize = currentFontSize + 'px'
+  editor.style.fontSize = currentFontSize + 'px'
 }
 
 // NEW: Text formatting helper functions
-function insertTextFormat(startTag, endTag, placeholder) {
-  const textarea = document.getElementById('notes')
-  const start = textarea.selectionStart
-  const end = textarea.selectionEnd
-  const selectedText = textarea.value.substring(start, end)
+function insertTextFormat(command, value = null) {
+  const editor = document.getElementById('notes')
+  editor.focus()
   
-  let replacement
-  if (selectedText) {
-    replacement = startTag + selectedText + endTag
-  } else {
-    replacement = startTag + placeholder + endTag
-  }
-  
-  textarea.value = textarea.value.substring(0, start) + replacement + textarea.value.substring(end)
-  
-  // Move cursor to end of inserted text
-  const newPosition = start + replacement.length
-  textarea.setSelectionRange(newPosition, newPosition)
-  textarea.focus()
+  // Use browser's built-in rich text commands
+  document.execCommand(command, false, value)
   
   // Trigger save
-  textarea.dispatchEvent(new Event('input'))
+  editor.dispatchEvent(new Event('input'))
   
-  // NEW: Update button states after formatting
+  // Update button states after formatting
   updateToolbarStates()
 }
 
-function insertListItem(prefix) {
-  const textarea = document.getElementById('notes')
-  const start = textarea.selectionStart
-  const value = textarea.value
+function insertListItem(listType) {
+  const editor = document.getElementById('notes')
+  editor.focus()
   
-  // Find the start of current line
-  const lineStart = value.lastIndexOf('\n', start - 1) + 1
-  
-  // Insert the list prefix at the beginning of current line
-  const newText = value.substring(0, lineStart) + prefix + value.substring(lineStart)
-  textarea.value = newText
-  
-  // Move cursor after the prefix
-  const newPosition = start + prefix.length
-  textarea.setSelectionRange(newPosition, newPosition)
-  textarea.focus()
+  if (listType === 'bullet') {
+    document.execCommand('insertUnorderedList', false, null)
+  } else if (listType === 'number') {
+    document.execCommand('insertOrderedList', false, null)
+  }
   
   // Trigger save
-  textarea.dispatchEvent(new Event('input'))
+  editor.dispatchEvent(new Event('input'))
+  
+  // Update button states
+  updateToolbarStates()
+}
+
+// NEW: Apply font size to selected text
+function applyFontSize(size) {
+  const editor = document.getElementById('notes')
+  editor.focus()
+  
+  // Create a span with the font size
+  const fontHTML = `<span style="font-size: ${size}px;">`
+  
+  // Check if we have selected text
+  const selection = window.getSelection()
+  if (selection.rangeCount > 0 && !selection.isCollapsed) {
+    // Text is selected - wrap it in a span
+    const range = selection.getRangeAt(0)
+    const span = document.createElement('span')
+    span.style.fontSize = size + 'px'
+    
+    try {
+      span.appendChild(range.extractContents())
+      range.insertNode(span)
+      selection.removeAllRanges()
+      
+      // Place cursor after the span
+      const newRange = document.createRange()
+      newRange.setStartAfter(span)
+      newRange.collapse(true)
+      selection.addRange(newRange)
+    } catch (e) {
+      console.log('Font size application failed:', e)
+    }
+  } else {
+    // No selection - set font size for future typing
+    document.execCommand('fontSize', false, '7') // Use size 7 as placeholder
+    
+    // Find the font elements and replace with our size
+    const fontElements = editor.querySelectorAll('font[size="7"]')
+    fontElements.forEach(el => {
+      const span = document.createElement('span')
+      span.style.fontSize = size + 'px'
+      span.innerHTML = el.innerHTML || '&nbsp;'
+      el.parentNode.replaceChild(span, el)
+    })
+  }
+  
+  // Trigger save
+  editor.dispatchEvent(new Event('input'))
 }
 
 // NEW: Update toolbar button states based on cursor position
 function updateToolbarStates() {
-  const textarea = document.getElementById('notes')
-  const cursorPos = textarea.selectionStart
-  const textBeforeCursor = textarea.value.substring(0, cursorPos)
-  const currentLine = textBeforeCursor.split('\n').pop()
-  
-  // Check for bold (**text**)
+  // Check current formatting at cursor position
   const boldBtn = document.getElementById('bold-btn')
-  const boldCount = (textBeforeCursor.match(/\*\*/g) || []).length
-  boldBtn.classList.toggle('active', boldCount % 2 === 1)
-  
-  // Check for italic (*text*)
   const italicBtn = document.getElementById('italic-btn')
-  const italicMatches = textBeforeCursor.match(/\*(?!\*)/g) || []
-  const boldMatches = textBeforeCursor.match(/\*\*/g) || []
-  const singleAsterisks = italicMatches.length - (boldMatches.length * 2)
-  italicBtn.classList.toggle('active', singleAsterisks % 2 === 1)
-  
-  // Check for underline (<u>text</u>)
   const underlineBtn = document.getElementById('underline-btn')
-  const openU = (textBeforeCursor.match(/<u>/g) || []).length
-  const closeU = (textBeforeCursor.match(/<\/u>/g) || []).length
-  underlineBtn.classList.toggle('active', openU > closeU)
-  
-  // Check for list items
   const bulletBtn = document.getElementById('bullet-btn')
   const numberBtn = document.getElementById('number-btn')
-  bulletBtn.classList.toggle('active', currentLine.startsWith('• '))
-  numberBtn.classList.toggle('active', /^\d+\.\s/.test(currentLine))
+  
+  // Use browser's queryCommandState to check formatting
+  boldBtn.classList.toggle('active', document.queryCommandState('bold'))
+  italicBtn.classList.toggle('active', document.queryCommandState('italic'))
+  underlineBtn.classList.toggle('active', document.queryCommandState('underline'))
+  bulletBtn.classList.toggle('active', document.queryCommandState('insertUnorderedList'))
+  numberBtn.classList.toggle('active', document.queryCommandState('insertOrderedList'))
 }
 
 // Function to update opacity
@@ -147,7 +162,7 @@ function updateOpacity(value) {
   const controls = document.querySelector('.controls')
   const content = document.querySelector('.content')
   const notesWrapper = document.getElementById('notes-wrapper')
-  const textarea = document.getElementById('notes')
+  const editor = document.getElementById('notes')
 
   // Calculate the actual opacity for the notes area (minimum 40%)
   const notesOpacity = Math.max(value, 0.4)
@@ -173,11 +188,11 @@ function updateOpacity(value) {
 
   // If opacity is very low, enhance text readability
   if (value < 0.4) {
-    textarea.style.fontWeight = '400'
-    textarea.style.textShadow = '0 0 2px rgba(255,255,255,0.8)'
+    editor.style.fontWeight = '400'
+    editor.style.textShadow = '0 0 2px rgba(255,255,255,0.8)'
   } else {
-    textarea.style.fontWeight = 'normal'
-    textarea.style.textShadow = 'none'
+    editor.style.fontWeight = 'normal'
+    editor.style.textShadow = 'none'
   }
 
   // Update the display
@@ -187,7 +202,7 @@ function updateOpacity(value) {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  const textarea = document.getElementById('notes')
+  const editor = document.getElementById('notes')
   const opacitySlider = document.getElementById('opacity-slider')
 
   // Initialize opacity to ensure proper setup
@@ -195,17 +210,17 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Load saved notes
   const { notes, privacy } = await window.api.loadNotes()
-  textarea.value = notes;
+  editor.innerHTML = notes;
   document.getElementById('privacy-checkbox').checked = privacy;
   updatePrivacyBadge(privacy);
 
   // Auto-save as user types (with debounce)
-  textarea.addEventListener('input', (e) => {
+  editor.addEventListener('input', (e) => {
     document.getElementById('save-status').textContent = 'Saving...'
     clearTimeout(saveTimeout)
 
     saveTimeout = setTimeout(() => {
-      window.api.saveNotes({ notes: e.target.value, privacy: document.getElementById('privacy-checkbox').checked })
+      window.api.saveNotes({ notes: e.target.innerHTML, privacy: document.getElementById('privacy-checkbox').checked })
       document.getElementById('save-status').textContent = 'Saved'
 
       setTimeout(() => {
@@ -215,12 +230,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   })
 
   // NEW: Update toolbar states when cursor moves or text selection changes
-  textarea.addEventListener('selectionchange', updateToolbarStates)
-  textarea.addEventListener('keyup', updateToolbarStates)
-  textarea.addEventListener('mouseup', updateToolbarStates)
+  editor.addEventListener('selectionchange', updateToolbarStates)
+  editor.addEventListener('keyup', updateToolbarStates)
+  editor.addEventListener('mouseup', updateToolbarStates)
 
   // NEW: Keyboard shortcuts for text formatting
-  textarea.addEventListener('keydown', (e) => {
+  editor.addEventListener('keydown', (e) => {
     // Check for Cmd/Ctrl key combinations
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
     const cmdKey = isMac ? e.metaKey : e.ctrlKey
@@ -230,31 +245,31 @@ window.addEventListener('DOMContentLoaded', async () => {
     switch(e.key.toLowerCase()) {
       case 'b':
         e.preventDefault()
-        insertTextFormat('**', '**', 'bold text')
+        insertTextFormat('bold')
         showNotification('Bold: Cmd+B')
         break
         
       case 'i':
         e.preventDefault()
-        insertTextFormat('*', '*', 'italic text')
+        insertTextFormat('italic')
         showNotification('Italic: Cmd+I')
         break
         
       case 'u':
         e.preventDefault()
-        insertTextFormat('<u>', '</u>', 'underlined text')
+        insertTextFormat('underline')
         showNotification('Underline: Cmd+U')
         break
         
       case 'l':
         e.preventDefault()
-        insertListItem('• ')
+        insertListItem('bullet')
         showNotification('Bullet List: Cmd+L')
         break
         
       case 'd':
         e.preventDefault()
-        insertListItem('1. ')
+        insertListItem('number')
         showNotification('Numbered List: Cmd+D')
         break
     }
@@ -300,13 +315,13 @@ window.addEventListener('DOMContentLoaded', async () => {
         // Import JSON backup
         const data = JSON.parse(content)
         if (data.notes) {
-          textarea.value = data.notes
+          editor.innerHTML = data.notes
           await window.api.saveNotes(data.notes)
           showNotification('Backup imported successfully')
         }
       } else {
         // Import as plain text/markdown
-        textarea.value = content
+        editor.innerHTML = content
         await window.api.saveNotes(content)
         showNotification('Notes imported successfully')
       }
@@ -327,7 +342,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Export handlers
   window.api.onExportNotes(async () => {
-    const notes = textarea.value
+    const notes = editor.innerHTML
     const timestamp = new Date().toISOString().split('T')[0]
     downloadFile(notes, `presenter-notes-${timestamp}.md`, 'text/markdown')
     showNotification('Notes exported')
@@ -339,7 +354,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   })
 
   window.api.onExportBackup(async () => {
-    const notes = textarea.value
+    const notes = editor.value
     const timestamp = new Date().toISOString()
     const backup = {
       notes: notes,
@@ -358,23 +373,23 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 // NEW: Toolbar button functionality
 document.getElementById('bold-btn').addEventListener('click', () => {
-  insertTextFormat('**', '**', 'bold text')
+  insertTextFormat('bold')
 })
 
 document.getElementById('italic-btn').addEventListener('click', () => {
-  insertTextFormat('*', '*', 'italic text')
+  insertTextFormat('italic')
 })
 
 document.getElementById('underline-btn').addEventListener('click', () => {
-  insertTextFormat('<u>', '</u>', 'underlined text')
+  insertTextFormat('underline')
 })
 
 document.getElementById('bullet-btn').addEventListener('click', () => {
-  insertListItem('• ')
+  insertListItem('bullet')
 })
 
 document.getElementById('number-btn').addEventListener('click', () => {
-  insertListItem('1. ')
+  insertListItem('number')
 })
 
 })
@@ -399,25 +414,25 @@ window.api.onShowNotification((event, message) => {
 // Handle click-through mode toggle
 window.api.onToggleClickThrough((event, isClickThrough) => {
   const body = document.body
-  const textarea = document.getElementById('notes')
+  const editor = document.getElementById('notes')
   const controls = document.querySelector('.controls')
 
   if (isClickThrough) {
     body.classList.add('click-through')
-    textarea.disabled = true
-    textarea.style.cursor = 'default'
+    editor.contentEditable = 'false'
+    editor.style.cursor = 'default'
     controls.style.pointerEvents = 'none'
     controls.style.opacity = '0.5'
 
-    textarea.placeholder = 'CLICK-THROUGH MODE ACTIVE\n\nWindow won\'t intercept clicks.\nPress Cmd+Shift+T to edit notes again.'
+    editor.placeholder = 'CLICK-THROUGH MODE ACTIVE\n\nWindow won\'t intercept clicks.\nPress Cmd+Shift+T to edit notes again.'
   } else {
     body.classList.remove('click-through')
-    textarea.disabled = false
-    textarea.style.cursor = 'text'
+    editor.contentEditable = 'true'
+    editor.style.cursor = 'text'
     controls.style.pointerEvents = 'auto'
     controls.style.opacity = '1'
 
-    textarea.placeholder = 'Type your presenter notes here...\n\n• They auto-save as you type\n• Won\'t appear in screenshots\n• Always stays on top\n\nGlobal Shortcuts:\n• Cmd+Shift+N: Toggle window\n• Cmd+Shift+O: Cycle opacity\n• Cmd+Shift+T: Click-through mode\n• Cmd+Shift+Plus/Minus: Font size'
+    editor.placeholder = 'Type your presenter notes here...\n\n• They auto-save as you type\n• Won\'t appear in screenshots\n• Always stays on top\n\nGlobal Shortcuts:\n• Cmd+Shift+N: Toggle window\n• Cmd+Shift+O: Cycle opacity\n• Cmd+Shift+T: Click-through mode\n• Cmd+Shift+Plus/Minus: Font size'
   }
 })
 
