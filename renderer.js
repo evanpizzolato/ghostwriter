@@ -200,10 +200,10 @@ function updateOpacity(value) {
   notesWrapper.style.backgroundColor = `rgba(255, 255, 255, ${notesOpacity * 0.95})`
 
     // NEW: Apply opacity to toolbar
-    const toolbar = document.querySelector('.text-toolbar')
-    if (toolbar) {
-      toolbar.style.backgroundColor = `rgba(248, 249, 250, ${value})`
-    }
+    // const toolbar = document.querySelector('.text-toolbar')
+    // if (toolbar) {
+    //   toolbar.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+    // }
 
   // If opacity is very low, enhance text readability
   if (value < 0.4) {
@@ -226,6 +226,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize opacity to ensure proper setup
   updateOpacity(1.0)
+  // Initialize slider background
+document.getElementById('opacity-slider').style.background = `linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) 100%, var(--bg-tertiary) 100%, var(--bg-tertiary) 100%)`
 
   // Load saved notes
   const { notes, privacy } = await window.api.loadNotes()
@@ -297,24 +299,15 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Opacity slider
   opacitySlider.addEventListener('input', (e) => {
     const value = e.target.value / 100
+    const percentage = e.target.value
+    
+    // Update slider background with gradient
+    e.target.style.background = `linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) ${percentage}%, var(--bg-tertiary) ${percentage}%, var(--bg-tertiary) 100%)`
+    
     updateOpacity(value)
   })
 
-  // Font size buttons
-  document.getElementById('font-decrease').addEventListener('click', () => {
-    updateFontSize('decrease')
-    showNotification('Font size decreased')
-  })
 
-  document.getElementById('font-reset').addEventListener('click', () => {
-    updateFontSize('reset')
-    showNotification('Font size reset')
-  })
-
-  document.getElementById('font-increase').addEventListener('click', () => {
-    updateFontSize('increase')
-    showNotification('Font size increased')
-  })
 
   // Font size dropdown
  // Debug: Check if dropdown exists

@@ -15,7 +15,7 @@
       /* Light gray for borders/dividers */
 
       /* Blue accent colors */
-      --blue-primary: #0066cc;
+      --blue-primary: #0066F3;
       /* Main blue for buttons */
       --blue-hover: #0056b3;
       /* Darker blue for hover states */
@@ -63,7 +63,7 @@
       background-color: rgba(248, 249, 250, 1);
       /* Fully opaque */
       border-bottom: 1px solid var(--bg-tertiary);
-      padding: 12px 16px 12px 80px;
+      padding: 8px 16px;
       -webkit-app-region: drag;
       display: flex;
       align-items: center;
@@ -101,7 +101,7 @@
 
     .privacy-badge {
       background-color: #ddffe4;
-      border: 1px solid var(--success);
+      border: none;
       color: #157c2d;
       padding: 2px 4px;
       border-radius: 4px;
@@ -116,7 +116,7 @@
       position: relative;
       display: inline-block;
       width: 36px;
-      height:16px;
+      height: 16px;
       margin-left: 8px;
       -webkit-app-region: no-drag;
     }
@@ -143,12 +143,12 @@
       position: absolute;
       content: "";
       height: 10px;
-      width: 10px;
+      width: 16px;
       left: 3px;
       bottom: 3px;
       background-color: white;
       transition: .3s;
-      border-radius: 50%
+      border-radius: 8px;
     }
 
     .privacy-switch input:checked+.slider {
@@ -156,7 +156,7 @@
     }
 
     .privacy-switch input:checked+.slider:before {
-      transform: translateX(20px)
+      transform: translateX(14px)
     }
 
     /* Click-through mode styling */
@@ -206,7 +206,6 @@
 
     .content {
       flex: 1;
-      padding: 15px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -216,122 +215,122 @@
     }
 
     /* Text editing toolbar */
-.text-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
-  background-color: rgba(248, 249, 250, 1);
-  border-bottom: 1px solid var(--bg-tertiary);
-  margin-bottom: 8px;
-  border-radius: 6px 6px 0 0;
-  -webkit-app-region: no-drag;
-}
+    .text-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background-color: white;
+      border-bottom: 1px solid var(--bg-tertiary);
+      -webkit-app-region: no-drag;
+    }
 
-.toolbar-btn {
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--bg-tertiary);
-  background-color: transparent;
-  color: var(--text-primary);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
+    .toolbar-btn {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background-color: transparent;
+      color: var(--text-primary);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.05s;
+    }
 
-.toolbar-btn:hover {
-  background-color: var(--bg-secondary);
-  border-color: var(--blue-primary);
-}
+    .toolbar-btn:hover {
+      background-color: var(--bg-secondary);
+      border-color: var(--blue-primary);
+    }
 
-.toolbar-btn.active {
-  background-color: var(--blue-primary);
-  color: white;
-  border-color: var(--blue-primary);
-}
+    .toolbar-btn.active {
+      background-color: var(--blue-primary);
+      color: white;
+      border-color: var(--blue-primary);
+    }
 
-.toolbar-separator {
-  color: var(--text-muted);
-  margin: 0 4px;
-  font-size: 14px;
-}
+    .toolbar-separator {
+      color: var(--text-muted);
+      margin: 0 4px;
+      font-size: 14px;
+    }
 
-/* Font size dropdown */
-.font-size-dropdown {
-  position: relative;
-}
+    /* Font size dropdown */
+    .font-size-dropdown {
+      position: relative;
+    }
+    .font-size-dropdown label {
+      font-size: 13px;
+      padding-right: 8px;
+    }
 
-#font-size-select {
-  height: 28px;
-  padding: 4px 24px 4px 8px;
-  border: 1px solid var(--bg-tertiary);
-  border-radius: 4px;
-  background-color: transparent;
-  color: var(--text-primary);
-  font-size: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  cursor: pointer;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 6px center;
-  background-size: 12px;
-  min-width: 50px;
-}
+    #font-size-select {
+      height: 28px;
+      padding: 4px 24px 4px 8px;
+      border: 1px solid var(--bg-tertiary);
+      border-radius: 4px;
+      background-color: transparent;
+      color: var(--text-primary);
+      font-size: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+      background-size: 12px;
+      min-width: 50px;
+    }
 
-#font-size-select:hover {
-  border-color: var(--blue-primary);
-  background-color: var(--bg-secondary);
-}
+    #font-size-select:hover {
+      border-color: var(--blue-primary);
+      background-color: var(--bg-secondary);
+    }
 
-#font-size-select:focus {
-  border-color: var(--blue-primary);
-  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-}
+    #font-size-select:focus {
+      border-color: var(--blue-primary);
+      box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    }
 
     #notes-wrapper {
       width: 100%;
       height: 100%;
       position: relative;
-      border-radius: 8px;
       background-color: var(--bg-primary);
       transition: background-color 0.2s ease;
     }
 
     #notes {
-  flex: 1;
-  background-color: transparent;
-  color: var(--text-primary);
-  border: none;
-  border-radius: 8px;
-  padding: 16px;
-  font-size: 14px;
-  line-height: 1.5;
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  outline: none;
-  transition: font-weight 0.2s ease, text-shadow 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
+      flex: 1;
+      background-color: transparent;
+      color: var(--text-primary);
+      border: none;
+      padding: 12px 24px;
+      font-size: 14px;
+      line-height: 1.5;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      outline: none;
+      transition: font-weight 0.2s ease, text-shadow 0.2s ease;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
 
-#notes:empty:before {
-  content: attr(data-placeholder);
-  color: var(--text-secondary);
-  pointer-events: none;
-  white-space: pre-wrap;
-}
+    #notes:empty:before {
+      content: attr(data-placeholder);
+      color: var(--text-secondary);
+      pointer-events: none;
+      white-space: pre-wrap;
+    }
 
 
     #notes::placeholder {
@@ -342,7 +341,7 @@
     .controls {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: start;
       gap: 15px;
       padding: 10px 15px;
       background-color: rgba(255, 255, 255, 1);
@@ -359,7 +358,7 @@
     }
 
     .control-label {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-secondary);
       min-width: 50px;
     }
@@ -375,12 +374,13 @@
 
     .slider::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
-      background: var(--blue-primary);
-      border-radius: 50%;
+      width: 18px;
+      height: 14px;
+      background: white;
+      border-radius: 8px;
+      border: 0.5px solid rgba(0, 0, 0, 0.02);
       cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0, 102, 204, 0.3);
+      box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.08);
       transition: transform 0.2s ease;
     }
 
@@ -388,40 +388,38 @@
       transform: scale(1.1);
     }
 
+    /* Opacity slider with blue fill */
+    .opacity-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) var(--slider-value, 100%), var(--bg-tertiary) var(--slider-value, 100%), var(--bg-tertiary) 100%);
+  border-radius: 2px;
+  outline: none;
+}
+
+.opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 14px;
+  background: #ffffff;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease;
+}
+
+.opacity-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
     #opacity-value {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-secondary);
       min-width: 35px;
     }
 
-    /* Font size buttons */
-    .font-controls {
-      display: flex;
-      gap: 4px;
-    }
 
-    .font-btn {
-      width: 24px;
-      height: 24px;
-      border: 1px solid var(--bg-tertiary);
-      color: var(--text-primary);
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-      -webkit-app-region: no-drag;
-    }
-
-    .font-btn:hover {
-      border-color: var(--bg-tertiary);
-    }
-
-    .font-btn:active {
-      background: var(--bg-tertiary);
-    }
 
     /* Notification toast */
     #notification {
@@ -477,11 +475,11 @@
 <body>
   <div class="header">
     <div class="header-left">
-      <div class="title">Presenter Notes</div>
+      <!-- <div class="title">Presenter Notes</div> -->
       <div id="save-status"></div>
     </div>
     <div class="badge-container">
-      <span class="privacy-badge">PRIVATE MODE ON</span>
+      <span class="privacy-badge">PRIVACY MODE</span>
       <label class="privacy-switch">
         <input type="checkbox" id="privacy-checkbox" checked />
         <span class="slider round" style="height: 16px;"></span>
@@ -491,35 +489,35 @@
     </div>
   </div>
 
-  
+
 
   <div class="content">
     <!-- Notification toast -->
     <div id="notification"></div>
 
-<!-- UPDATED: Text editing toolbar with keyboard shortcut hints -->
-<div class="text-toolbar">
-  <div class="font-size-dropdown">
-    <select id="font-size-select" title="Font Size">
-      <option value="12">12</option>
-      <option value="14">14</option>
-      <option value="16" selected>16</option>
-      <option value="18">18</option>
-      <option value="20">20</option>
-      <option value="24">24</option>
-      <option value="28">28</option>
-      <option value="32">32</option>
-      <option value="36">36</option>
-    </select>
-  </div>
-  <span class="toolbar-separator">|</span>
-  <button class="toolbar-btn" id="bold-btn" title="Bold (Cmd+B)">B</button>
-  <button class="toolbar-btn" id="italic-btn" title="Italic (Cmd+I)">I</button>
-  <button class="toolbar-btn" id="underline-btn" title="Underline (Cmd+U)">U</button>
-  <span class="toolbar-separator">|</span>
-  <button class="toolbar-btn" id="bullet-btn" title="Bullet List (Cmd+L)">•</button>
-  <button class="toolbar-btn" id="number-btn" title="Numbered List (Cmd+D)">1.</button>
-</div>
+    <!-- UPDATED: Text editing toolbar with keyboard shortcut hints -->
+    <div class="text-toolbar">
+      <div class="font-size-dropdown">
+        <label for="font-size">Font size</label><select id="font-size-select" title="Font Size">
+          <option value="12">12</option>
+          <option value="14">14</option>
+          <option value="16" selected>16</option>
+          <option value="18">18</option>
+          <option value="20">20</option>
+          <option value="24">24</option>
+          <option value="28">28</option>
+          <option value="32">32</option>
+          <option value="36">36</option>
+        </select>
+      </div>
+      <span class="toolbar-separator">|</span>
+      <button class="toolbar-btn" id="bold-btn" title="Bold (Cmd+B)">B</button>
+      <button class="toolbar-btn" id="italic-btn" title="Italic (Cmd+I)">I</button>
+      <button class="toolbar-btn" id="underline-btn" title="Underline (Cmd+U)">U</button>
+      <span class="toolbar-separator">|</span>
+      <button class="toolbar-btn" id="bullet-btn" title="Bullet List (Cmd+L)">•</button>
+      <button class="toolbar-btn" id="number-btn" title="Numbered List (Cmd+D)">1.</button>
+    </div>
 
     <div id="notes-wrapper">
       <div id="notes" contenteditable="true" spellcheck="true"></div>
@@ -529,18 +527,9 @@
   <!-- Controls bar -->
   <div class="controls">
     <div class="control-group">
-      <span class="control-label">Opacity:</span>
-      <input type="range" class="slider" id="opacity-slider" min="10" max="100" value="100">
+      <span class="control-label">Opacity</span>
+      <input type="range" class="opacity-slider" id="opacity-slider" min="10" max="100" value="100">
       <span id="opacity-value">100%</span>
-    </div>
-
-    <div class="control-group">
-      <span class="control-label">Font:</span>
-      <div class="font-controls">
-        <button class="font-btn" id="font-decrease">−</button>
-        <button class="font-btn" id="font-reset">R</button>
-        <button class="font-btn" id="font-increase">+</button>
-      </div>
     </div>
   </div>
 
