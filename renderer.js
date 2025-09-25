@@ -1,21 +1,7 @@
 // This runs in your web page
 let saveTimeout
-let notificationTimeout
 let currentFontSize = 18  // Default font size
 let currentOpacity = 1.0  // Default opacity
-
-// Function to show temporary notifications
-// function showNotification(message) {
-//   const notification = document.getElementById('notification')
-//   notification.textContent = message
-//   notification.style.display = 'block'
-
-//   clearTimeout(notificationTimeout)
-
-//   notificationTimeout = setTimeout(() => {
-//     notification.style.display = 'none'
-//   }, 1500)
-// }
 
 
 
@@ -267,31 +253,26 @@ document.getElementById('opacity-slider').style.background = `linear-gradient(to
       case 'b':
         e.preventDefault()
         insertTextFormat('bold')
-        showNotification('Bold: Cmd+B')
         break
-        
+
       case 'i':
         e.preventDefault()
         insertTextFormat('italic')
-        showNotification('Italic: Cmd+I')
         break
-        
+
       case 'u':
         e.preventDefault()
         insertTextFormat('underline')
-        showNotification('Underline: Cmd+U')
         break
-        
+
       case 'l':
         e.preventDefault()
         insertListItem('bullet')
-        showNotification('Bullet List: Cmd+L')
         break
-        
+
       case 'd':
         e.preventDefault()
         insertListItem('number')
-        showNotification('Numbered List: Cmd+D')
         break
     }
   })
@@ -345,17 +326,14 @@ document.getElementById('opacity-slider').style.background = `linear-gradient(to
         if (data.notes) {
           editor.innerHTML = data.notes
           await window.api.saveNotes(data.notes)
-          showNotification('Backup imported successfully')
         }
       } else {
         // Import as plain text/markdown
         editor.innerHTML = content
         await window.api.saveNotes(content)
-        showNotification('Notes imported successfully')
       }
     } catch (error) {
       console.error('Import failed:', error)
-      showNotification('Import failed')
     }
 
     // Reset file input
@@ -373,7 +351,6 @@ document.getElementById('opacity-slider').style.background = `linear-gradient(to
     const notes = editor.innerHTML
     const timestamp = new Date().toISOString().split('T')[0]
     downloadFile(notes, `presenter-notes-${timestamp}.md`, 'text/markdown')
-    showNotification('Notes exported')
   })
 
   window.api.onImportNotes(() => {
@@ -382,7 +359,7 @@ document.getElementById('opacity-slider').style.background = `linear-gradient(to
   })
 
   window.api.onExportBackup(async () => {
-    const notes = editor.value
+    const notes = editor.innerHTML
     const timestamp = new Date().toISOString()
     const backup = {
       notes: notes,
@@ -391,7 +368,6 @@ document.getElementById('opacity-slider').style.background = `linear-gradient(to
       opacity: currentOpacity
     }
     downloadFile(JSON.stringify(backup, null, 2), `notes-backup-${timestamp.split('T')[0]}.json`, 'application/json')
-    showNotification('Backup exported')
   })
 
   window.api.onImportBackup(() => {
@@ -432,11 +408,6 @@ window.api.onFontSizeChange((event, direction) => {
 // Handle opacity changes from menu
 window.api.onOpacityChange((event, opacity) => {
   updateOpacity(opacity)
-})
-
-// Handle notification display
-window.api.onShowNotification((event, message) => {
-  showNotification(message)
 })
 
 // Handle click-through mode toggle

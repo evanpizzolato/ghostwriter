@@ -10,10 +10,6 @@ contextBridge.exposeInMainWorld('api', {
   // Menu commands
   onFontSizeChange: (callback) => ipcRenderer.on('change-font-size', callback),
   onOpacityChange: (callback) => ipcRenderer.on('change-opacity', callback),
-  
-  // Notifications
-  onShowNotification: (callback) => ipcRenderer.on('show-notification', callback),
-  
   // Click-through
   onToggleClickThrough: (callback) => ipcRenderer.on('toggle-click-through', callback),
   
@@ -23,4 +19,3 @@ contextBridge.exposeInMainWorld('api', {
   onExportBackup: (callback) => ipcRenderer.on('export-backup', callback),
   onImportBackup: (callback) => ipcRenderer.on('import-backup', callback)
 })
-

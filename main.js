@@ -178,10 +178,6 @@ const opacityRegistered = globalShortcut.register('Command+Shift+O', () => {
   if (mainWindow) {
     currentOpacityIndex = (currentOpacityIndex + 1) % opacities.length
     mainWindow.webContents.send('change-opacity', opacities[currentOpacityIndex])
-    
-    // Show a quick notification of the opacity level
-    const percentages = ['100%', '70%', '40%', '20%', '10%']
-    mainWindow.webContents.send('show-notification', `Opacity: ${percentages[currentOpacityIndex]}`)
   }
 })
   
@@ -193,14 +189,12 @@ const opacityRegistered = globalShortcut.register('Command+Shift+O', () => {
   const fontIncreaseRegistered = globalShortcut.register('Command+Shift+Plus', () => {
     if (mainWindow) {
       mainWindow.webContents.send('change-font-size', 'increase')
-      mainWindow.webContents.send('show-notification', 'Font size increased')
     }
   })
   
   const fontDecreaseRegistered = globalShortcut.register('Command+Shift+-', () => {
     if (mainWindow) {
       mainWindow.webContents.send('change-font-size', 'decrease')
-      mainWindow.webContents.send('show-notification', 'Font size decreased')
     }
   })
 
@@ -219,10 +213,6 @@ const opacityRegistered = globalShortcut.register('Command+Shift+O', () => {
       // Apply the change
       mainWindow.setIgnoreMouseEvents(newState)
       mainWindow.webContents.send('toggle-click-through', newState)
-      
-      // Show notification
-      const status = newState ? 'ON - Window won\'t block clicks' : 'OFF - Window is interactive'
-      mainWindow.webContents.send('show-notification', `Click-through: ${status}`)
     }
   })
   
