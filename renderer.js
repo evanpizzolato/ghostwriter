@@ -1,10 +1,40 @@
 // This runs in your web page
+const SAVE_DEBOUNCE_MS = 500
+const NOTE_TITLE_MAX_LENGTH = 60
+const FALLBACK_NOTE_TITLE = 'Untitled'
+const TRASH_ICON_SVG = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M3.5 4.375V11.375C3.5 11.9705 3.97653 12.447 4.572 12.447H9.427C10.0225 12.447 10.499 11.9705 10.499 11.375V4.375" stroke="#4C4C4C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M2.625 4.375H11.375" stroke="#4C4C4C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M5.03125 4.375V3.5C5.03125 3.30109 5.11004 3.11032 5.24918 2.97118C5.38832 2.83204 5.57909 2.75325 5.778 2.75325H8.222C8.42091 2.75325 8.61168 2.83204 8.75082 2.97118C8.88996 3.11032 8.96875 3.30109 8.96875 3.5V4.375" stroke="#4C4C4C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M6.125 6.125V10.0625" stroke="#4C4C4C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M7.875 6.125V10.0625" stroke="#4C4C4C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+`
+
+const generateNoteId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+
+  return `note-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
 let saveTimeout
 let currentFontSize = 18  // Default font size
 let currentOpacity = 1.0  // Default opacity
 let toolbarVisible = true
 let sidebarCollapsed = true
 let sidebarToggleShortcutHint = '⌥⌘S'
+
+let notes = []
+let activeNoteId = null
+
+let editor
+let noteList
+let newNoteButton
+let privacyCheckbox
+let saveStatus
 
 
 
@@ -29,6 +59,294 @@ function readFile(file) {
     reader.onerror = reject
     reader.readAsText(file)
   })
+}
+
+function deriveTitleFromContent(content = '') {
+  if (!content) return FALLBACK_NOTE_TITLE
+
+  const temp = document.createElement('div')
+  temp.innerHTML = content
+
+  const rawText = (temp.innerText || temp.textContent || '').replace(/\r/g, '')
+  const firstLine = rawText
+    .split('\n')
+    .map(line => line.trim())
+    .find(line => line.length > 0) || ''
+
+  if (!firstLine) {
+    return FALLBACK_NOTE_TITLE
+  }
+
+  if (firstLine.length > NOTE_TITLE_MAX_LENGTH) {
+    return `${firstLine.slice(0, NOTE_TITLE_MAX_LENGTH).trimEnd()}…`
+  }
+
+  return firstLine
+}
+
+function normalizeNote(rawNote = {}) {
+  const now = new Date().toISOString()
+  const content = typeof rawNote.content === 'string' ? rawNote.content : ''
+  const createdAt = rawNote.createdAt ?? now
+  const updatedAt = rawNote.updatedAt ?? createdAt
+  const id = typeof rawNote.id === 'string' ? rawNote.id : generateNoteId()
+
+  return {
+    id,
+    content,
+    createdAt,
+    updatedAt,
+    title: deriveTitleFromContent(content)
+  }
+}
+
+function prepareNotes(rawNotes) {
+  if (!Array.isArray(rawNotes)) {
+    return { notes: [], mutated: true }
+  }
+
+  let mutated = false
+
+  const sanitized = rawNotes.map((rawNote) => {
+    const normalized = normalizeNote(rawNote)
+    if (!rawNote || rawNote.id !== normalized.id || rawNote.content !== normalized.content || rawNote.createdAt !== normalized.createdAt || rawNote.updatedAt !== normalized.updatedAt) {
+      mutated = true
+    }
+    return normalized
+  })
+
+  return { notes: sanitized, mutated }
+}
+
+function parseTimestamp(value) {
+  if (!value) return 0
+  const time = Date.parse(value)
+  return Number.isNaN(time) ? 0 : time
+}
+
+function sortNotesByUpdated() {
+  notes.sort((a, b) => parseTimestamp(b.updatedAt) - parseTimestamp(a.updatedAt))
+}
+
+function getActiveNote() {
+  if (!activeNoteId) return null
+  return notes.find(note => note.id === activeNoteId) || null
+}
+
+function focusEditorAtEnd() {
+  if (!editor) return
+
+  editor.focus()
+
+  const range = document.createRange()
+  range.selectNodeContents(editor)
+  range.collapse(false)
+
+  const selection = window.getSelection()
+  if (!selection) return
+
+  selection.removeAllRanges()
+  selection.addRange(range)
+}
+
+function buildStatePayload() {
+  return {
+    notes: notes.map(({ id, content, createdAt, updatedAt }) => ({ id, content, createdAt, updatedAt })),
+    activeNoteId,
+    privacy: privacyCheckbox ? !!privacyCheckbox.checked : true,
+    sidebarCollapsed
+  }
+}
+
+function persistStateImmediate() {
+  if (!window.api || !window.api.saveNotes) return
+
+  try {
+    window.api.saveNotes(buildStatePayload())
+  } catch (error) {
+    console.error('Failed to persist notes state', error)
+  }
+}
+
+function scheduleStateSave() {
+  if (saveStatus) {
+    saveStatus.textContent = 'Saving...'
+  }
+
+  clearTimeout(saveTimeout)
+  saveTimeout = setTimeout(() => {
+    persistStateImmediate()
+
+    if (saveStatus) {
+      saveStatus.textContent = 'Saved'
+      setTimeout(() => {
+        if (saveStatus && saveStatus.textContent === 'Saved') {
+          saveStatus.textContent = ''
+        }
+      }, 2000)
+    }
+  }, SAVE_DEBOUNCE_MS)
+}
+
+function renderNotesList() {
+  if (!noteList) return
+
+  noteList.innerHTML = ''
+
+  if (!notes.length) {
+    const emptyState = document.createElement('div')
+    emptyState.className = 'note-list-empty'
+    emptyState.textContent = 'No notes yet'
+    noteList.appendChild(emptyState)
+    return
+  }
+
+  const fragment = document.createDocumentFragment()
+
+  notes.forEach((note) => {
+    const item = document.createElement('div')
+    item.className = 'note-item'
+    item.setAttribute('role', 'listitem')
+
+    if (note.id === activeNoteId) {
+      item.classList.add('note-item--active')
+    }
+
+    const displayTitle = note.title || FALLBACK_NOTE_TITLE
+    const accessibleTitle = displayTitle
+
+    const selectButton = document.createElement('button')
+    selectButton.type = 'button'
+    selectButton.className = 'note-item__select'
+    selectButton.textContent = displayTitle
+    selectButton.dataset.noteId = note.id
+    selectButton.title = displayTitle
+
+    if (note.id === activeNoteId) {
+      selectButton.setAttribute('aria-current', 'true')
+    }
+
+    selectButton.addEventListener('click', () => {
+      selectNote(note.id)
+    })
+
+    const deleteButton = document.createElement('button')
+    deleteButton.type = 'button'
+    deleteButton.className = 'note-item__delete'
+    deleteButton.setAttribute('aria-label', `Delete note "${accessibleTitle}"`)
+    deleteButton.innerHTML = TRASH_ICON_SVG
+    deleteButton.addEventListener('click', (event) => {
+      event.stopPropagation()
+      deleteNote(note.id)
+    })
+
+    item.appendChild(selectButton)
+    item.appendChild(deleteButton)
+    fragment.appendChild(item)
+  })
+
+  noteList.appendChild(fragment)
+}
+
+function selectNote(noteId, { focus = true } = {}) {
+  if (!editor) return
+
+  if (noteId === activeNoteId) {
+    if (focus) {
+      focusEditorAtEnd()
+    }
+    return
+  }
+
+  const targetNote = notes.find(note => note.id === noteId)
+  if (!targetNote) return
+
+  clearTimeout(saveTimeout)
+
+  activeNoteId = noteId
+  editor.innerHTML = targetNote.content || ''
+
+  renderNotesList()
+  updateToolbarStates()
+
+  if (focus) {
+    focusEditorAtEnd()
+  }
+
+  persistStateImmediate()
+}
+
+function createNote({ focus = true, persist = true } = {}) {
+  const now = new Date().toISOString()
+  const note = {
+    id: generateNoteId(),
+    content: '',
+    createdAt: now,
+    updatedAt: now,
+    title: FALLBACK_NOTE_TITLE
+  }
+
+  notes.unshift(note)
+  sortNotesByUpdated()
+
+  activeNoteId = note.id
+
+  if (editor) {
+    editor.innerHTML = ''
+    updateToolbarStates()
+
+    if (focus) {
+      focusEditorAtEnd()
+    }
+  }
+
+  renderNotesList()
+
+  if (persist) {
+    persistStateImmediate()
+  }
+
+  return note
+}
+
+function deleteNote(noteId) {
+  const index = notes.findIndex(note => note.id === noteId)
+  if (index === -1) return
+
+  notes.splice(index, 1)
+
+  if (!notes.length) {
+    createNote({ focus: true, persist: true })
+    renderNotesList()
+    return
+  }
+
+  sortNotesByUpdated()
+
+  if (noteId === activeNoteId) {
+    activeNoteId = notes[0].id
+    if (editor) {
+      editor.innerHTML = notes[0].content || ''
+      updateToolbarStates()
+      focusEditorAtEnd()
+    }
+  }
+
+  renderNotesList()
+  persistStateImmediate()
+}
+
+function updateActiveNoteContent(content) {
+  const note = getActiveNote()
+  if (!note) return
+
+  note.content = content
+  note.updatedAt = new Date().toISOString()
+  note.title = deriveTitleFromContent(content)
+
+  sortNotesByUpdated()
+  renderNotesList()
+  scheduleStateSave()
 }
 
 // Function to update font size
@@ -250,18 +568,21 @@ function applySidebarState(collapsed, { persist = false, suppressAnimation = fal
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  const editor = document.getElementById('notes')
+  editor = document.getElementById('notes')
+  noteList = document.getElementById('note-list')
+  newNoteButton = document.getElementById('new-note-button')
+  saveStatus = document.getElementById('save-status')
+  privacyCheckbox = document.getElementById('privacy-checkbox')
+
   const opacitySlider = document.getElementById('opacity-slider')
   const toolbarWrapper = document.getElementById('toolbar-wrapper')
   const toolbarToggle = document.getElementById('toolbar-toggle')
   const sidebarToggle = document.getElementById('sidebar-toggle')
-  const privacyCheckbox = document.getElementById('privacy-checkbox')
-  const saveStatus = document.getElementById('save-status')
-  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+  const fontSizeDropdown = document.getElementById('font-size-select')
+  const isMac = navigator.platform.toUpperCase().includes('MAC')
 
   sidebarToggleShortcutHint = isMac ? '⌥⌘S' : 'Ctrl+Alt+S'
 
-  // Initialize opacity to ensure proper setup
   updateOpacity(1.0)
 
   if (opacitySlider) {
@@ -269,19 +590,53 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   const loadedState = await window.api.loadNotes()
-  const { notes, privacy, sidebarCollapsed: savedSidebarCollapsed } = loadedState
+  const preparedState = prepareNotes(loadedState?.notes)
+  notes = preparedState.notes
+  let stateChanged = preparedState.mutated
+
+  const privacyValue = typeof loadedState?.privacy === 'boolean' ? loadedState.privacy : true
+  if (privacyCheckbox) {
+    privacyCheckbox.checked = privacyValue
+  }
+  updatePrivacyBadge(privacyValue)
+
+  const initialSidebarCollapsed = typeof loadedState?.sidebarCollapsed === 'boolean' ? loadedState.sidebarCollapsed : true
+  applySidebarState(initialSidebarCollapsed, { suppressAnimation: true })
+
+  if (!notes.length) {
+    const now = new Date().toISOString()
+    notes.push({
+      id: generateNoteId(),
+      content: '',
+      createdAt: now,
+      updatedAt: now,
+      title: FALLBACK_NOTE_TITLE
+    })
+    stateChanged = true
+  }
+
+  sortNotesByUpdated()
+
+  if (loadedState?.activeNoteId && notes.some(note => note.id === loadedState.activeNoteId)) {
+    activeNoteId = loadedState.activeNoteId
+  } else {
+    activeNoteId = notes[0]?.id ?? null
+    stateChanged = true
+  }
 
   if (editor) {
-    editor.innerHTML = notes
+    const activeNote = getActiveNote()
+    editor.innerHTML = activeNote ? activeNote.content : ''
   }
 
-  if (privacyCheckbox) {
-    privacyCheckbox.checked = privacy
-  }
+  renderNotesList()
+  updateToolbarStates()
 
-  const initialSidebarCollapsed = typeof savedSidebarCollapsed === 'boolean' ? savedSidebarCollapsed : true
-  applySidebarState(initialSidebarCollapsed, { suppressAnimation: true })
-  updatePrivacyBadge(privacy)
+  if (newNoteButton) {
+    newNoteButton.addEventListener('click', () => {
+      createNote({ focus: true, persist: true })
+    })
+  }
 
   if (sidebarToggle) {
     sidebarToggle.addEventListener('click', () => {
@@ -301,39 +656,15 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   if (editor) {
     editor.addEventListener('input', (e) => {
-      if (saveStatus) {
-        saveStatus.textContent = 'Saving...'
-      }
-      clearTimeout(saveTimeout)
-
-      saveTimeout = setTimeout(() => {
-        window.api.saveNotes({
-          notes: e.target.innerHTML,
-          privacy: privacyCheckbox ? privacyCheckbox.checked : true,
-          sidebarCollapsed
-        })
-
-        if (saveStatus) {
-          saveStatus.textContent = 'Saved'
-
-          setTimeout(() => {
-            saveStatus.textContent = ''
-          }, 2000)
-        }
-      }, 500)
+      updateActiveNoteContent(e.target.innerHTML)
     })
-  }
 
-  if (editor) {
-    // NEW: Update toolbar states when cursor moves or text selection changes
-    editor.addEventListener('selectionchange', updateToolbarStates)
     editor.addEventListener('keyup', updateToolbarStates)
     editor.addEventListener('mouseup', updateToolbarStates)
+    editor.addEventListener('focus', updateToolbarStates)
 
-    // NEW: Keyboard shortcuts for text formatting
     editor.addEventListener('keydown', (e) => {
       const cmdKey = isMac ? e.metaKey : e.ctrlKey
-
       if (!cmdKey) return
 
       switch (e.key.toLowerCase()) {
@@ -341,22 +672,18 @@ window.addEventListener('DOMContentLoaded', async () => {
           e.preventDefault()
           insertTextFormat('bold')
           break
-
         case 'i':
           e.preventDefault()
           insertTextFormat('italic')
           break
-
         case 'u':
           e.preventDefault()
           insertTextFormat('underline')
           break
-
         case 'l':
           e.preventDefault()
           insertListItem('bullet')
           break
-
         case 'd':
           e.preventDefault()
           insertListItem('number')
@@ -365,28 +692,26 @@ window.addEventListener('DOMContentLoaded', async () => {
     })
   }
 
+  document.addEventListener('selectionchange', () => {
+    if (document.activeElement === editor) {
+      updateToolbarStates()
+    }
+  })
+
   if (opacitySlider) {
-    // Opacity slider
     opacitySlider.addEventListener('input', (e) => {
       const value = e.target.value / 100
       const percentage = e.target.value
 
-      // Update slider background with gradient
       e.target.style.background = `linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) ${percentage}%, var(--bg-tertiary) ${percentage}%, var(--bg-tertiary) 100%)`
 
       updateOpacity(value)
     })
   }
 
-
-
-  // Font size dropdown
-  const dropdown = document.getElementById('font-size-select')
-
-  if (dropdown) {
-    dropdown.addEventListener('change', (e) => {
-      const size = e.target.value
-      setFontSize(size)
+  if (fontSizeDropdown) {
+    fontSizeDropdown.addEventListener('change', (e) => {
+      setFontSize(e.target.value)
     })
   }
 
@@ -411,13 +736,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     updateToolbarToggleState()
   }
 
-  // File input for imports (hidden, triggered programmatically)
   const fileInput = document.createElement('input')
   fileInput.type = 'file'
   fileInput.style.display = 'none'
   document.body.appendChild(fileInput)
 
-  // Handle file selection for imports
   fileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0]
     if (!file) return
@@ -426,50 +749,99 @@ window.addEventListener('DOMContentLoaded', async () => {
       const content = await readFile(file)
 
       if (file.name.endsWith('.json')) {
-        // Import JSON backup
         const data = JSON.parse(content)
-        if (data.notes) {
+
+        if (Array.isArray(data.notes)) {
+          const imported = prepareNotes(data.notes)
+          notes = imported.notes
+          sortNotesByUpdated()
+
+          if (data.activeNoteId && notes.some(note => note.id === data.activeNoteId)) {
+            activeNoteId = data.activeNoteId
+          } else {
+            activeNoteId = notes[0]?.id ?? null
+          }
+
+          if (!notes.length) {
+            const now = new Date().toISOString()
+            notes.push({
+              id: generateNoteId(),
+              content: '',
+              createdAt: now,
+              updatedAt: now,
+              title: FALLBACK_NOTE_TITLE
+            })
+            activeNoteId = notes[0].id
+          }
+
+          if (editor) {
+            const activeNote = getActiveNote()
+            editor.innerHTML = activeNote ? activeNote.content : ''
+          }
+
+          renderNotesList()
+          updateToolbarStates()
+          persistStateImmediate()
+        } else if (typeof data.notes === 'string') {
+          if (!getActiveNote()) {
+            const now = new Date().toISOString()
+            notes = [{
+              id: generateNoteId(),
+              content: '',
+              createdAt: now,
+              updatedAt: now,
+              title: FALLBACK_NOTE_TITLE
+            }]
+            activeNoteId = notes[0].id
+          }
+
           if (editor) {
             editor.innerHTML = data.notes
+            updateActiveNoteContent(editor.innerHTML)
+            focusEditorAtEnd()
           }
-          await window.api.saveNotes({
-            notes: data.notes,
-            privacy: privacyCheckbox ? privacyCheckbox.checked : true,
-            sidebarCollapsed
-          })
         }
       } else {
-        // Import as plain text/markdown
+        if (!getActiveNote()) {
+          const now = new Date().toISOString()
+          notes = [{
+            id: generateNoteId(),
+            content: '',
+            createdAt: now,
+            updatedAt: now,
+            title: FALLBACK_NOTE_TITLE
+          }]
+          activeNoteId = notes[0].id
+        }
+
         if (editor) {
           editor.innerHTML = content
+          updateActiveNoteContent(editor.innerHTML)
+          focusEditorAtEnd()
         }
-        await window.api.saveNotes({
-          notes: content,
-          privacy: privacyCheckbox ? privacyCheckbox.checked : true,
-          sidebarCollapsed
-        })
       }
     } catch (error) {
       console.error('Import failed:', error)
+    } finally {
+      fileInput.value = ''
     }
-
-    // Reset file input
-    fileInput.value = ''
   })
 
   if (privacyCheckbox) {
     privacyCheckbox.addEventListener('change', async (e) => {
       const on = e.target.checked
-      await window.api.togglePrivacy()   // main process flips window
+      await window.api.togglePrivacy()
       updatePrivacyBadge(on)
+      persistStateImmediate()
     })
   }
 
-  // Export handlers
   window.api.onExportNotes(async () => {
-    const notes = editor.innerHTML
+    const activeNote = getActiveNote()
+    if (!activeNote) return
+
     const timestamp = new Date().toISOString().split('T')[0]
-    downloadFile(notes, `presenter-notes-${timestamp}.md`, 'text/markdown')
+    downloadFile(activeNote.content, `presenter-notes-${timestamp}.md`, 'text/markdown')
   })
 
   window.api.onImportNotes(() => {
@@ -478,21 +850,28 @@ window.addEventListener('DOMContentLoaded', async () => {
   })
 
   window.api.onExportBackup(async () => {
-    const notes = editor.innerHTML
     const timestamp = new Date().toISOString()
-    const backup = {
-      notes: notes,
-      exportedAt: timestamp,
-      fontSize: currentFontSize,
-      opacity: currentOpacity
+    const payload = {
+      ...buildStatePayload(),
+      exportedAt: timestamp
     }
-    downloadFile(JSON.stringify(backup, null, 2), `notes-backup-${timestamp.split('T')[0]}.json`, 'application/json')
+
+    downloadFile(JSON.stringify(payload, null, 2), `notes-backup-${timestamp.split('T')[0]}.json`, 'application/json')
   })
 
   window.api.onImportBackup(() => {
     fileInput.accept = '.json'
     fileInput.click()
   })
+
+  if (stateChanged) {
+    persistStateImmediate()
+  }
+
+  if (editor) {
+    focusEditorAtEnd()
+  }
+})
 
 // NEW: Toolbar button functionality
 document.getElementById('bold-btn').addEventListener('click', () => {
@@ -515,7 +894,7 @@ document.getElementById('number-btn').addEventListener('click', () => {
   insertListItem('number')
 })
 
-})
+
 
 
 

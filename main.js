@@ -19,7 +19,8 @@ const userDataPath = app.getPath('userData')
 const notesPath = path.join(userDataPath, 'notes.json')
 
 const defaultNotesState = () => ({
-  notes: '',
+  notes: [],
+  activeNoteId: null,
   privacy: true,
   sidebarCollapsed: true,
   savedAt: new Date().toISOString()
@@ -31,11 +32,16 @@ function loadNotesState() {
   try {
     if (fs.existsSync(notesPath)) {
       const data = JSON.parse(fs.readFileSync(notesPath, 'utf8'))
-      notesState = {
-        notes: data.notes ?? '',
-        privacy: data.privacy ?? true,
-        sidebarCollapsed: data.sidebarCollapsed ?? true,
-        savedAt: data.savedAt ?? new Date().toISOString()
+      if (data && Array.isArray(data.notes)) {
+        notesState = {
+          notes: data.notes,
+          activeNoteId: data.activeNoteId ?? null,
+          privacy: data.privacy ?? true,
+          sidebarCollapsed: data.sidebarCollapsed ?? true,
+          savedAt: data.savedAt ?? new Date().toISOString()
+        }
+      } else {
+        notesState = defaultNotesState()
       }
     } else {
       notesState = defaultNotesState()
@@ -50,18 +56,33 @@ function loadNotesState() {
 }
 
 function persistNotesState(updates = {}) {
-  notesState = {
+  const nextState = {
     ...notesState,
-    notes: updates.notes !== undefined ? updates.notes : notesState.notes,
-    privacy: updates.privacy !== undefined ? updates.privacy : notesState.privacy,
-    sidebarCollapsed: updates.sidebarCollapsed !== undefined ? updates.sidebarCollapsed : notesState.sidebarCollapsed,
     savedAt: new Date().toISOString()
   }
+
+  if (updates.notes !== undefined && Array.isArray(updates.notes)) {
+    nextState.notes = updates.notes
+  }
+
+  if (updates.activeNoteId !== undefined) {
+    nextState.activeNoteId = updates.activeNoteId
+  }
+
+  if (updates.privacy !== undefined) {
+    nextState.privacy = updates.privacy
+  }
+
+  if (updates.sidebarCollapsed !== undefined) {
+    nextState.sidebarCollapsed = updates.sidebarCollapsed
+  }
+
+  notesState = nextState
 
   privacyOn = notesState.privacy ?? true
 
   try {
-    fs.writeFileSync(notesPath, JSON.stringify(notesState))
+    fs.writeFileSync(notesPath, JSON.stringify(notesState, null, 2))
     console.log('Notes state saved →', { privacy: notesState.privacy, sidebarCollapsed: notesState.sidebarCollapsed })
   } catch (error) {
     console.error('persistNotesState error', error)
@@ -544,18 +565,29 @@ function createWindow() {
 // Handle saving notes from the renderer
 ipcMain.on('save-notes', (event, payload) => {
   try {
-    if (typeof payload === 'string') {
-      persistNotesState({ notes: payload })
+    if (!payload || typeof payload !== 'object') {
       return
     }
 
-    if (payload && typeof payload === 'object') {
-      persistNotesState({
-        notes: payload.notes,
-        privacy: payload.privacy,
-        sidebarCollapsed: payload.sidebarCollapsed
-      })
+    const updates = {}
+
+    if (Array.isArray(payload.notes)) {
+      updates.notes = payload.notes
     }
+
+    if (payload.activeNoteId === null || typeof payload.activeNoteId === 'string') {
+      updates.activeNoteId = payload.activeNoteId
+    }
+
+    if (typeof payload.privacy === 'boolean') {
+      updates.privacy = payload.privacy
+    }
+
+    if (payload.sidebarCollapsed !== undefined) {
+      updates.sidebarCollapsed = !!payload.sidebarCollapsed
+    }
+
+    persistNotesState(updates)
   } catch (error) {
     console.error('save-notes error', error)
   }
@@ -573,12 +605,22 @@ ipcMain.on('save-sidebar-state', (event, collapsed) => {
 ipcMain.handle('load-notes', () => {
   try {
     const state = loadNotesState()
-    return { notes: state.notes, privacy: state.privacy, sidebarCollapsed: state.sidebarCollapsed }
+    return {
+      notes: state.notes,
+      activeNoteId: state.activeNoteId,
+      privacy: state.privacy,
+      sidebarCollapsed: state.sidebarCollapsed
+    }
   } catch (error) {
     console.error('load-notes handler error', error)
     const fallback = defaultNotesState()
     privacyOn = fallback.privacy
-    return { notes: fallback.notes, privacy: fallback.privacy, sidebarCollapsed: fallback.sidebarCollapsed }
+    return {
+      notes: fallback.notes,
+      activeNoteId: fallback.activeNoteId,
+      privacy: fallback.privacy,
+      sidebarCollapsed: fallback.sidebarCollapsed
+    }
   }
 })
 

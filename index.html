@@ -148,7 +148,158 @@
     .sidebar-content {
       position: relative;
       flex: 1;
+      min-height: 0;
       padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .new-note-button {
+      -webkit-app-region: no-drag;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .new-note-button:hover {
+      background: rgba(255, 255, 255, 1);
+      border-color: rgba(0, 102, 243, 0.25);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .new-note-button:focus-visible {
+      outline: 2px solid var(--blue-primary);
+      outline-offset: 2px;
+    }
+
+    .new-note-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(0, 102, 243, 0.12);
+    }
+
+    .new-note-icon svg {
+      width: 12px;
+      height: 12px;
+      color: var(--blue-primary);
+    }
+
+    .note-list {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding-right: 4px;
+    }
+
+    .note-item {
+      display: flex;
+      align-items: center;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.65);
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .note-item:hover {
+      border-color: rgba(0, 0, 0, 0.08);
+    }
+
+    .note-item--active {
+      border-color: rgba(0, 102, 243, 0.35);
+      background: rgba(0, 102, 243, 0.12);
+    }
+
+    .note-item__select {
+      flex: 1;
+      text-align: left;
+      background: transparent;
+      border: none;
+      padding: 8px 10px 8px 12px;
+      font-size: 13px;
+      color: var(--text-primary);
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: color 0.2s ease;
+    }
+
+    .note-item__select:hover {
+      color: var(--blue-primary);
+    }
+
+    .note-item__select:focus-visible {
+      outline: none;
+      color: var(--blue-primary);
+    }
+
+    .note-item--active .note-item__select {
+      color: var(--blue-primary);
+      font-weight: 600;
+    }
+
+    .note-item__delete {
+      -webkit-app-region: no-drag;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-right: 4px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.2s ease, background-color 0.2s ease;
+    }
+
+    .note-item__delete:hover,
+    .note-item__delete:focus-visible {
+      opacity: 1;
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .note-item__delete:focus-visible {
+      outline: 2px solid var(--blue-primary);
+      outline-offset: 1px;
+    }
+
+    .note-item__delete svg {
+      pointer-events: none;
+    }
+
+    .note-list-empty {
+      margin-top: 12px;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .note-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .note-list::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 3px;
     }
 
     .main-column {
@@ -660,7 +811,19 @@
 
   <div class="app-layout">
     <aside id="app-sidebar" class="sidebar" role="complementary" aria-label="Sidebar">
-      <div class="sidebar-content" aria-hidden="true"></div>
+      <div class="sidebar-content">
+        <button class="new-note-button" id="new-note-button" type="button" aria-label="Create a new note">
+          <span class="new-note-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1.5V10.5" stroke="#0066F3" stroke-width="1.5" stroke-linecap="round" />
+              <path d="M1.5 6H10.5" stroke="#0066F3" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </span>
+          <span class="new-note-label">New Note</span>
+        </button>
+
+        <div id="note-list" class="note-list" role="list" aria-label="Notes"></div>
+      </div>
     </aside>
 
     <div class="main-column">

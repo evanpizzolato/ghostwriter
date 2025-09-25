@@ -53,13 +53,13 @@ A privacy-focused Electron-based macOS app for presenter notes that stay hidden 
 - **IPC Handlers**: Manages communication between main and renderer processes
 - **Global Shortcuts**: Registers system-wide hotkeys
 - **Menu System**: Creates native macOS menu bar and system tray
-- **Data Persistence**: Handles file I/O for notes storage and privacy state
+- **Data Persistence**: Handles file I/O for notes storage, privacy state, and sidebar preference
 
 ### Renderer Process (`renderer.js`)
-- **UI Logic**: Manages the contenteditable editor, toolbar, and user interactions
+- **UI Logic**: Manages the contenteditable editor, collapsible sidebar, toolbar, and user interactions
 - **Auto-save**: Debounced saving with a 500ms delay
 - **Import/Export**: File handling for notes backup and sharing
-- **State Management**: Tracks font size, opacity, click-through mode, toolbar visibility
+- **State Management**: Tracks font size, opacity, click-through mode, toolbar visibility, and sidebar collapse state
 
 ### Preload Script (`preload.js`)
 - **Security Bridge**: Exposes safe APIs to renderer via `contextBridge`
@@ -101,6 +101,7 @@ mainWindow.setIgnoreMouseEvents(true)  // Clicks pass through
 - **Format**: JSON with notes content and metadata
 - **Auto-save**: Debounced (500ms after typing stops)
 - **Backup**: Export/import functionality for markdown/plain text and JSON backups
+- **Sidebar State**: Persists the collapsed/expanded sidebar preference alongside notes and privacy
 
 ### 6. UI Controls
 - Gradient toolbar with hide/show toggle and 1px separators
@@ -108,6 +109,7 @@ mainWindow.setIgnoreMouseEvents(true)  // Clicks pass through
 - Formatting buttons (bold, italic, underline, bullet list, numbered list)
 - Opacity slider (10–100%) with gradient track
 - Save status indicator inside the window header
+- Collapsible sidebar (default collapsed) with macOS-style toggle button, keyboard shortcut (`⌥⌘S`/`Ctrl+Alt+S`), smooth animation, and state persistence
 
 ## Package Configuration
 
@@ -156,6 +158,58 @@ let tray = null  // Add tray variable
 // Get the path where we'll store notes
 const userDataPath = app.getPath('userData')
 const notesPath = path.join(userDataPath, 'notes.json')
+
+const defaultNotesState = () => ({
+  notes: '',
+  privacy: true,
+  sidebarCollapsed: true,
+  savedAt: new Date().toISOString()
+})
+
+let notesState = defaultNotesState()
+
+function loadNotesState() {
+  try {
+    if (fs.existsSync(notesPath)) {
+      const data = JSON.parse(fs.readFileSync(notesPath, 'utf8'))
+      notesState = {
+        notes: data.notes ?? '',
+        privacy: data.privacy ?? true,
+        sidebarCollapsed: data.sidebarCollapsed ?? true,
+        savedAt: data.savedAt ?? new Date().toISOString()
+      }
+    } else {
+      notesState = defaultNotesState()
+    }
+  } catch (error) {
+    console.error('loadNotesState error', error)
+    notesState = defaultNotesState()
+  }
+
+  privacyOn = notesState.privacy ?? true
+  return notesState
+}
+
+function persistNotesState(updates = {}) {
+  notesState = {
+    ...notesState,
+    notes: updates.notes !== undefined ? updates.notes : notesState.notes,
+    privacy: updates.privacy !== undefined ? updates.privacy : notesState.privacy,
+    sidebarCollapsed: updates.sidebarCollapsed !== undefined ? updates.sidebarCollapsed : notesState.sidebarCollapsed,
+    savedAt: new Date().toISOString()
+  }
+
+  privacyOn = notesState.privacy ?? true
+
+  try {
+    fs.writeFileSync(notesPath, JSON.stringify(notesState))
+    console.log('Notes state saved →', { privacy: notesState.privacy, sidebarCollapsed: notesState.sidebarCollapsed })
+  } catch (error) {
+    console.error('persistNotesState error', error)
+  }
+}
+
+loadNotesState()
 
 
 
@@ -599,7 +653,7 @@ function createMenu() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 500,
+    width: 728,
     height: 600,
     
     frame: false,
@@ -610,7 +664,7 @@ function createWindow() {
     titleBarStyle: 'hiddenInset', // Add this line - enables custom titlebar
     
     resizable: true,
-    minWidth: 500,
+    minWidth: 642,
     minHeight: 400,
     
     roundedCorners: true,
@@ -629,32 +683,43 @@ function createWindow() {
 }
 
 // Handle saving notes from the renderer
-ipcMain.on('save-notes', (event, notes) => {
+ipcMain.on('save-notes', (event, payload) => {
   try {
-    privacyOn = notes.privacy ?? privacyOn;     // keep in sync
-    const payload = { notes: notes.notes, privacy: privacyOn, savedAt: new Date() };
-    fs.writeFileSync(notesPath, JSON.stringify(payload));
-    console.log('Notes + privacy saved →', privacyOn);
-  } catch (e) {
-    console.error('save-notes error', e);
+    if (typeof payload === 'string') {
+      persistNotesState({ notes: payload })
+      return
+    }
+
+    if (payload && typeof payload === 'object') {
+      persistNotesState({
+        notes: payload.notes,
+        privacy: payload.privacy,
+        sidebarCollapsed: payload.sidebarCollapsed
+      })
+    }
+  } catch (error) {
+    console.error('save-notes error', error)
+  }
+})
+
+ipcMain.on('save-sidebar-state', (event, collapsed) => {
+  try {
+    persistNotesState({ sidebarCollapsed: !!collapsed })
+  } catch (error) {
+    console.error('save-sidebar-state error', error)
   }
 })
 
 // Handle loading notes
 ipcMain.handle('load-notes', () => {
   try {
-    if (fs.existsSync(notesPath)) {
-      const data = JSON.parse(fs.readFileSync(notesPath, 'utf8'));
-      privacyOn = data.privacy ?? true;     // use saved flag
-      return { notes: data.notes, privacy: privacyOn };
-    }
-    // file does NOT exist yet → first run
-    privacyOn = true;                       // default ON
-    return { notes: '', privacy: true };
-  } catch (e) {
-    console.error('load-notes error', e);
-    privacyOn = true;
-    return { notes: '', privacy: true };
+    const state = loadNotesState()
+    return { notes: state.notes, privacy: state.privacy, sidebarCollapsed: state.sidebarCollapsed }
+  } catch (error) {
+    console.error('load-notes handler error', error)
+    const fallback = defaultNotesState()
+    privacyOn = fallback.privacy
+    return { notes: fallback.notes, privacy: fallback.privacy, sidebarCollapsed: fallback.sidebarCollapsed }
   }
 })
 
@@ -667,6 +732,7 @@ ipcMain.handle('toggle-privacy', () => {
       mainWindow.setContentProtection(privacyOn);
     }
 
+  persistNotesState({ privacy: privacyOn })
 
   return privacyOn;
 });
@@ -697,6 +763,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('api', {
   saveNotes: (notes) => ipcRenderer.send('save-notes', notes),
   loadNotes: () => ipcRenderer.invoke('load-notes'),
+  saveSidebarState: (collapsed) => ipcRenderer.send('save-sidebar-state', collapsed),
 
   togglePrivacy: () => ipcRenderer.invoke('toggle-privacy'),
   onPrivacyChanged: (cb) => ipcRenderer.on('privacy-changed', cb),
@@ -723,6 +790,8 @@ let saveTimeout
 let currentFontSize = 18  // Default font size
 let currentOpacity = 1.0  // Default opacity
 let toolbarVisible = true
+let sidebarCollapsed = true
+let sidebarToggleShortcutHint = '⌥⌘S'
 
 
 
@@ -883,9 +952,11 @@ function updateOpacity(value) {
   // For transparent window effect, we need to change the background alpha values
   const header = document.querySelector('.header')
   const controls = document.querySelector('.controls')
+  const appLayout = document.querySelector('.app-layout')
   const content = document.querySelector('.content')
   const notesWrapper = document.getElementById('notes-wrapper')
   const editor = document.getElementById('notes')
+  const mainColumn = document.querySelector('.main-column')
 
   // Calculate the actual opacity for the notes area (minimum 40%)
   const notesOpacity = Math.max(value, 0.4)
@@ -897,8 +968,16 @@ function updateOpacity(value) {
   header.style.backgroundColor = '#f8f9fa'
   controls.style.backgroundColor = '#ffffff'
 
+  if (appLayout) {
+    appLayout.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+  }
+
   // Content area with variable transparency
   content.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+
+  if (mainColumn) {
+    mainColumn.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+  }
 
   // Notes wrapper with minimum 40% opacity
   notesWrapper.style.backgroundColor = `rgba(255, 255, 255, ${notesOpacity * 0.95})`
@@ -924,89 +1003,167 @@ function updateOpacity(value) {
   document.getElementById('opacity-slider').value = percentage
 }
 
+function applySidebarState(collapsed, { persist = false, suppressAnimation = false } = {}) {
+  const body = document.body
+  const toggle = document.getElementById('sidebar-toggle')
+
+  if (!body) return
+
+  const isCollapsed = !!collapsed
+
+  if (suppressAnimation) {
+    body.classList.add('sidebar-initializing')
+  }
+
+  sidebarCollapsed = isCollapsed
+  body.classList.toggle('sidebar-collapsed', isCollapsed)
+
+  if (toggle) {
+    toggle.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true')
+    toggle.setAttribute('aria-label', isCollapsed ? 'Show sidebar' : 'Hide sidebar')
+    const hint = sidebarToggleShortcutHint
+    toggle.title = isCollapsed ? `Show sidebar (${hint})` : `Hide sidebar (${hint})`
+  }
+
+  if (persist && window.api.saveSidebarState) {
+    window.api.saveSidebarState(isCollapsed)
+  }
+
+  if (suppressAnimation) {
+    requestAnimationFrame(() => {
+      body.classList.remove('sidebar-initializing')
+    })
+  }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   const editor = document.getElementById('notes')
   const opacitySlider = document.getElementById('opacity-slider')
   const toolbarWrapper = document.getElementById('toolbar-wrapper')
   const toolbarToggle = document.getElementById('toolbar-toggle')
+  const sidebarToggle = document.getElementById('sidebar-toggle')
+  const privacyCheckbox = document.getElementById('privacy-checkbox')
+  const saveStatus = document.getElementById('save-status')
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+
+  sidebarToggleShortcutHint = isMac ? '⌥⌘S' : 'Ctrl+Alt+S'
 
   // Initialize opacity to ensure proper setup
   updateOpacity(1.0)
-  // Initialize slider background
-document.getElementById('opacity-slider').style.background = `linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) 100%, var(--bg-tertiary) 100%, var(--bg-tertiary) 100%)`
 
-  // Load saved notes
-  const { notes, privacy } = await window.api.loadNotes()
-  editor.innerHTML = notes;
-  document.getElementById('privacy-checkbox').checked = privacy;
-  updatePrivacyBadge(privacy);
+  if (opacitySlider) {
+    opacitySlider.style.background = 'linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) 100%, var(--bg-tertiary) 100%, var(--bg-tertiary) 100%)'
+  }
 
-  // Auto-save as user types (with debounce)
-  editor.addEventListener('input', (e) => {
-    document.getElementById('save-status').textContent = 'Saving...'
-    clearTimeout(saveTimeout)
+  const loadedState = await window.api.loadNotes()
+  const { notes, privacy, sidebarCollapsed: savedSidebarCollapsed } = loadedState
 
-    saveTimeout = setTimeout(() => {
-      window.api.saveNotes({ notes: e.target.innerHTML, privacy: document.getElementById('privacy-checkbox').checked })
-      document.getElementById('save-status').textContent = 'Saved'
+  if (editor) {
+    editor.innerHTML = notes
+  }
 
-      setTimeout(() => {
-        document.getElementById('save-status').textContent = ''
-      }, 2000)
-    }, 500)
+  if (privacyCheckbox) {
+    privacyCheckbox.checked = privacy
+  }
+
+  const initialSidebarCollapsed = typeof savedSidebarCollapsed === 'boolean' ? savedSidebarCollapsed : true
+  applySidebarState(initialSidebarCollapsed, { suppressAnimation: true })
+  updatePrivacyBadge(privacy)
+
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', () => {
+      applySidebarState(!sidebarCollapsed, { persist: true })
+    })
+  }
+
+  window.addEventListener('keydown', (event) => {
+    const primaryModifier = isMac ? event.metaKey : event.ctrlKey
+
+    if (!primaryModifier || !event.altKey) return
+    if (event.key.toLowerCase() !== 's') return
+
+    event.preventDefault()
+    applySidebarState(!sidebarCollapsed, { persist: true })
   })
 
-  // NEW: Update toolbar states when cursor moves or text selection changes
-  editor.addEventListener('selectionchange', updateToolbarStates)
-  editor.addEventListener('keyup', updateToolbarStates)
-  editor.addEventListener('mouseup', updateToolbarStates)
+  if (editor) {
+    editor.addEventListener('input', (e) => {
+      if (saveStatus) {
+        saveStatus.textContent = 'Saving...'
+      }
+      clearTimeout(saveTimeout)
 
-  // NEW: Keyboard shortcuts for text formatting
-  editor.addEventListener('keydown', (e) => {
-    // Check for Cmd/Ctrl key combinations
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
-    const cmdKey = isMac ? e.metaKey : e.ctrlKey
-    
-    if (!cmdKey) return
-    
-    switch(e.key.toLowerCase()) {
-      case 'b':
-        e.preventDefault()
-        insertTextFormat('bold')
-        break
+      saveTimeout = setTimeout(() => {
+        window.api.saveNotes({
+          notes: e.target.innerHTML,
+          privacy: privacyCheckbox ? privacyCheckbox.checked : true,
+          sidebarCollapsed
+        })
 
-      case 'i':
-        e.preventDefault()
-        insertTextFormat('italic')
-        break
+        if (saveStatus) {
+          saveStatus.textContent = 'Saved'
 
-      case 'u':
-        e.preventDefault()
-        insertTextFormat('underline')
-        break
+          setTimeout(() => {
+            saveStatus.textContent = ''
+          }, 2000)
+        }
+      }, 500)
+    })
+  }
 
-      case 'l':
-        e.preventDefault()
-        insertListItem('bullet')
-        break
+  if (editor) {
+    // NEW: Update toolbar states when cursor moves or text selection changes
+    editor.addEventListener('selectionchange', updateToolbarStates)
+    editor.addEventListener('keyup', updateToolbarStates)
+    editor.addEventListener('mouseup', updateToolbarStates)
 
-      case 'd':
-        e.preventDefault()
-        insertListItem('number')
-        break
-    }
-  })
+    // NEW: Keyboard shortcuts for text formatting
+    editor.addEventListener('keydown', (e) => {
+      const cmdKey = isMac ? e.metaKey : e.ctrlKey
 
-  // Opacity slider
-  opacitySlider.addEventListener('input', (e) => {
-    const value = e.target.value / 100
-    const percentage = e.target.value
-    
-    // Update slider background with gradient
-    e.target.style.background = `linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) ${percentage}%, var(--bg-tertiary) ${percentage}%, var(--bg-tertiary) 100%)`
-    
-    updateOpacity(value)
-  })
+      if (!cmdKey) return
+
+      switch (e.key.toLowerCase()) {
+        case 'b':
+          e.preventDefault()
+          insertTextFormat('bold')
+          break
+
+        case 'i':
+          e.preventDefault()
+          insertTextFormat('italic')
+          break
+
+        case 'u':
+          e.preventDefault()
+          insertTextFormat('underline')
+          break
+
+        case 'l':
+          e.preventDefault()
+          insertListItem('bullet')
+          break
+
+        case 'd':
+          e.preventDefault()
+          insertListItem('number')
+          break
+      }
+    })
+  }
+
+  if (opacitySlider) {
+    // Opacity slider
+    opacitySlider.addEventListener('input', (e) => {
+      const value = e.target.value / 100
+      const percentage = e.target.value
+
+      // Update slider background with gradient
+      e.target.style.background = `linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) ${percentage}%, var(--bg-tertiary) ${percentage}%, var(--bg-tertiary) 100%)`
+
+      updateOpacity(value)
+    })
+  }
 
 
 
@@ -1059,13 +1216,25 @@ document.getElementById('opacity-slider').style.background = `linear-gradient(to
         // Import JSON backup
         const data = JSON.parse(content)
         if (data.notes) {
-          editor.innerHTML = data.notes
-          await window.api.saveNotes(data.notes)
+          if (editor) {
+            editor.innerHTML = data.notes
+          }
+          await window.api.saveNotes({
+            notes: data.notes,
+            privacy: privacyCheckbox ? privacyCheckbox.checked : true,
+            sidebarCollapsed
+          })
         }
       } else {
         // Import as plain text/markdown
-        editor.innerHTML = content
-        await window.api.saveNotes(content)
+        if (editor) {
+          editor.innerHTML = content
+        }
+        await window.api.saveNotes({
+          notes: content,
+          privacy: privacyCheckbox ? privacyCheckbox.checked : true,
+          sidebarCollapsed
+        })
       }
     } catch (error) {
       console.error('Import failed:', error)
@@ -1075,11 +1244,13 @@ document.getElementById('opacity-slider').style.background = `linear-gradient(to
     fileInput.value = ''
   })
 
-  document.getElementById('privacy-checkbox').addEventListener('change', async (e) => {
-    const on = e.target.checked;
-    await window.api.togglePrivacy();   // main process flips window
-    updatePrivacyBadge(on);
-  })
+  if (privacyCheckbox) {
+    privacyCheckbox.addEventListener('change', async (e) => {
+      const on = e.target.checked
+      await window.api.togglePrivacy()   // main process flips window
+      updatePrivacyBadge(on)
+    })
+  }
 
   // Export handlers
   window.api.onExportNotes(async () => {
@@ -1158,7 +1329,10 @@ window.api.onToggleClickThrough((event, isClickThrough) => {
     controls.style.pointerEvents = 'none'
     controls.style.opacity = '0.5'
 
-    editor.placeholder = 'CLICK-THROUGH MODE ACTIVE\n\nWindow won\'t intercept clicks.\nPress Cmd+Shift+T to edit notes again.'
+    editor.placeholder = 'CLICK-THROUGH MODE ACTIVE
+
+Window won\'t intercept clicks.
+Press Cmd+Shift+T to edit notes again.'
   } else {
     body.classList.remove('click-through')
     editor.contentEditable = 'true'
@@ -1166,7 +1340,17 @@ window.api.onToggleClickThrough((event, isClickThrough) => {
     controls.style.pointerEvents = 'auto'
     controls.style.opacity = '1'
 
-    editor.placeholder = 'Type your presenter notes here...\n\n• They auto-save as you type\n• Won\'t appear in screenshots\n• Always stays on top\n\nGlobal Shortcuts:\n• Cmd+Shift+N: Toggle window\n• Cmd+Shift+O: Cycle opacity\n• Cmd+Shift+T: Click-through mode\n• Cmd+Shift+Plus/Minus: Font size'
+    editor.placeholder = 'Type your presenter notes here...
+
+• They auto-save as you type
+• Won\'t appear in screenshots
+• Always stays on top
+
+Global Shortcuts:
+• Cmd+Shift+N: Toggle window
+• Cmd+Shift+O: Cycle opacity
+• Cmd+Shift+T: Click-through mode
+• Cmd+Shift+Plus/Minus: Font size'
   }
 
 })
@@ -1268,6 +1452,102 @@ function updatePrivacyBadge(on) {
       display: flex;
       align-items: center;
       gap: 10px;
+      margin-left: 56px;
+    }
+
+    .sidebar-toggle {
+      -webkit-app-region: no-drag;
+      width: 30px;
+      height: 30px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .sidebar-toggle:hover {
+      background-color: rgba(0, 0, 0, 0.08);
+    }
+
+    .sidebar-toggle:focus-visible {
+      outline: 2px solid var(--blue-primary);
+      outline-offset: 2px;
+    }
+
+    .sidebar-toggle-icon {
+      transition: transform 0.24s ease;
+    }
+
+    body:not(.sidebar-collapsed) .sidebar-toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .app-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      background-color: var(--bg-secondary);
+    }
+
+    .sidebar {
+      width: 200px;
+      min-width: 200px;
+      max-width: 200px;
+      background: linear-gradient(180deg, #F6F7F9 0%, #EDEFF3 100%);
+      border-right: 1px solid rgba(0, 0, 0, 0.05);
+      box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.03);
+      transition: width 0.24s ease, min-width 0.24s ease, opacity 0.24s ease;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sidebar::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 100%);
+      opacity: 0.6;
+    }
+
+    .sidebar-content {
+      position: relative;
+      flex: 1;
+      padding: 16px 20px;
+    }
+
+    .main-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background-color: rgba(255, 255, 255, 0.95);
+      transition: background-color 0.2s ease;
+    }
+
+    body.sidebar-collapsed .sidebar {
+      width: 0;
+      min-width: 0;
+      opacity: 0;
+      pointer-events: none;
+      border-right-color: transparent;
+      box-shadow: none;
+    }
+
+    body.sidebar-collapsed .sidebar::after {
+      opacity: 0;
+    }
+
+    body.sidebar-initializing .sidebar,
+    body.sidebar-initializing .sidebar-toggle-icon,
+    body.sidebar-initializing .sidebar::after {
+      transition: none !important;
     }
 
     .title {
@@ -1723,10 +2003,18 @@ function updatePrivacyBadge(on) {
   </style>
 </head>
 
-<body>
+<body class="sidebar-collapsed">
   <div class="header">
     <div class="header-left">
-      <!-- <div class="title">Presenter Notes</div> -->
+      <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Show sidebar" aria-expanded="false"
+        aria-controls="app-sidebar">
+        <svg class="sidebar-toggle-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"
+          fill="none" aria-hidden="true">
+          <line x1="4.25" y1="4" x2="4.25" y2="14" stroke="#3A3A3C" stroke-width="1.5" stroke-linecap="round" />
+          <path d="M10.25 5.75L13.5 9L10.25 12.25" stroke="#3A3A3C" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </button>
     </div>
     <div class="badge-container">
       <span class="privacy-badge">PRIVACY MODE</span>
@@ -1741,10 +2029,16 @@ function updatePrivacyBadge(on) {
 
 
 
-  <div class="content">
-    <div class="toolbar-wrapper" id="toolbar-wrapper">
-      <div class="toolbar-content">
-        <div class="font-size-control">
+  <div class="app-layout">
+    <aside id="app-sidebar" class="sidebar" role="complementary" aria-label="Sidebar">
+      <div class="sidebar-content" aria-hidden="true"></div>
+    </aside>
+
+    <div class="main-column">
+      <div class="content">
+        <div class="toolbar-wrapper" id="toolbar-wrapper">
+          <div class="toolbar-content">
+            <div class="font-size-control">
           <label for="font-size-select">Font size</label>
           <div class="font-size-select-wrapper">
             <select id="font-size-select" title="Font Size">
@@ -1800,12 +2094,12 @@ function updatePrivacyBadge(on) {
               <path d="M5.41659 16.6666H2.83325C2.83325 15.8333 4.99992 15.0624 4.99992 13.7499C4.99995 13.4987 4.92426 13.2532 4.78271 13.0456C4.64117 12.838 4.44034 12.6779 4.20643 12.5861C3.97252 12.4943 3.71638 12.4752 3.47143 12.5312C3.22648 12.5872 3.00408 12.7157 2.83325 12.8999" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      <button class="toolbar-toggle" id="toolbar-toggle" type="button">
-        <span class="toggle-label">Hide toolbar</span>
-        <span class="toggle-icon toggle-icon--hide" aria-hidden="true">
+          <button class="toolbar-toggle" id="toolbar-toggle" type="button">
+            <span class="toggle-label">Hide toolbar</span>
+            <span class="toggle-icon toggle-icon--hide" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M2.94874 1.89326C2.91032 1.84995 2.86369 1.8147 2.81154 1.78954C2.7594 1.76439 2.70278 1.74984 2.64497 1.74673C2.58716 1.74362 2.5293 1.75201 2.47476 1.77142C2.42022 1.79084 2.37007 1.82088 2.32723 1.85982C2.28438 1.89876 2.24969 1.94581 2.22516 1.99825C2.20064 2.0507 2.18676 2.10749 2.18435 2.16533C2.18193 2.22317 2.19102 2.28092 2.21109 2.33523C2.23115 2.38954 2.2618 2.43932 2.30124 2.48169L3.35343 3.63943C1.36718 4.85841 0.512964 6.73748 0.475229 6.82279C0.450354 6.87874 0.4375 6.93929 0.4375 7.00052C0.4375 7.06175 0.450354 7.12231 0.475229 7.17826C0.49437 7.22146 0.957573 8.24849 1.98734 9.27826C3.35945 10.6498 5.09249 11.375 6.99999 11.375C7.98033 11.3806 8.95076 11.1787 9.84757 10.7827L11.0507 12.1067C11.0891 12.15 11.1358 12.1853 11.1879 12.2104C11.24 12.2356 11.2967 12.2501 11.3545 12.2532C11.4123 12.2563 11.4701 12.2479 11.5247 12.2285C11.5792 12.2091 11.6294 12.1791 11.6722 12.1401C11.7151 12.1012 11.7498 12.0541 11.7743 12.0017C11.7988 11.9493 11.8127 11.8925 11.8151 11.8346C11.8175 11.7768 11.8084 11.719 11.7884 11.6647C11.7683 11.6104 11.7376 11.5606 11.6982 11.5183L2.94874 1.89326ZM5.5371 6.04076L7.81593 8.54818C7.47276 8.72871 7.07936 8.79016 6.69748 8.72287C6.31561 8.65558 5.96689 8.46337 5.7061 8.17642C5.44531 7.88946 5.2872 7.52402 5.25661 7.13747C5.22603 6.75092 5.32469 6.36516 5.5371 6.04076ZM6.99999 10.5C5.31671 10.5 3.84617 9.88802 2.62882 8.68162C2.12915 8.18504 1.70418 7.6186 1.36718 6.99998C1.62367 6.51927 2.44234 5.17396 3.95663 4.29951L4.94101 5.37959C4.55991 5.86767 4.36364 6.47478 4.38688 7.09359C4.41012 7.71239 4.65138 8.30306 5.06801 8.76119C5.48465 9.21932 6.04983 9.51541 6.66366 9.59712C7.27749 9.67882 7.90045 9.5409 8.42242 9.20771L9.22796 10.0936C8.51702 10.3664 7.76145 10.5042 6.99999 10.5ZM7.32812 5.28115C7.21412 5.25939 7.11343 5.19324 7.0482 5.09724C6.98297 5.00125 6.95855 4.88327 6.98031 4.76927C7.00206 4.65527 7.06822 4.55458 7.16421 4.48935C7.26021 4.42413 7.37818 4.3997 7.49218 4.42146C8.04978 4.52956 8.55749 4.81502 8.93959 5.23526C9.32169 5.6555 9.5577 6.188 9.61242 6.75334C9.62322 6.86886 9.58769 6.98394 9.51364 7.07327C9.43959 7.1626 9.3331 7.21885 9.21757 7.22966C9.20391 7.23047 9.19022 7.23047 9.17656 7.22966C9.06721 7.23013 8.96165 7.18963 8.88067 7.11615C8.79969 7.04266 8.74917 6.94151 8.73906 6.83263C8.70223 6.4566 8.54503 6.10249 8.29082 5.82296C8.03661 5.54343 7.69898 5.35341 7.32812 5.28115ZM13.5231 7.17826C13.5002 7.22966 12.9462 8.4563 11.6987 9.57357C11.6561 9.61296 11.6061 9.64348 11.5516 9.66334C11.497 9.68321 11.4391 9.69203 11.3811 9.68928C11.3231 9.68654 11.2663 9.67228 11.2139 9.64735C11.1615 9.62242 11.1145 9.58731 11.0758 9.54407C11.0371 9.50082 11.0074 9.45031 10.9884 9.39547C10.9694 9.34062 10.9615 9.28255 10.9652 9.22463C10.9688 9.16671 10.984 9.11009 11.0098 9.05808C11.0355 9.00607 11.0714 8.95971 11.1152 8.92169C11.7272 8.37188 12.2413 7.72205 12.6355 6.99998C12.2978 6.38079 11.8719 5.81396 11.3712 5.31724C10.1538 4.11193 8.68328 3.49998 6.99999 3.49998C6.64532 3.49954 6.29121 3.52826 5.94124 3.58584C5.88433 3.5959 5.82599 3.59459 5.76959 3.58198C5.71319 3.56937 5.65984 3.5457 5.61264 3.51236C5.56543 3.47901 5.5253 3.43665 5.49456 3.3877C5.46383 3.33876 5.44309 3.28421 5.43355 3.22721C5.42402 3.17021 5.42587 3.11188 5.439 3.0556C5.45214 2.99932 5.47629 2.94619 5.51007 2.8993C5.54385 2.85241 5.58659 2.81267 5.63582 2.78239C5.68504 2.7521 5.73978 2.73187 5.79687 2.72287C6.19454 2.65721 6.59694 2.62446 6.99999 2.62498C8.90749 2.62498 10.6405 3.35013 12.0127 4.72224C13.0424 5.75201 13.5056 6.77959 13.5248 6.82279C13.5496 6.87874 13.5625 6.93929 13.5625 7.00052C13.5625 7.06175 13.5496 7.12231 13.5248 7.17826H13.5231Z" fill="#0066F3" />
         </span>
@@ -1815,22 +2109,24 @@ function updatePrivacyBadge(on) {
             <path d="M7 8.75C7.9665 8.75 8.75 7.9665 8.75 7C8.75 6.0335 7.9665 5.25 7 5.25C6.0335 5.25 5.25 6.0335 5.25 7C5.25 7.9665 6.0335 8.75 7 8.75Z" stroke="#0066F3" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </span>
-      </button>
-    </div>
+          </button>
+        </div>
 
-    <div id="notes-wrapper">
-      <div id="notes" contenteditable="true" spellcheck="true"></div>
-    </div>
-  </div>
+        <div id="notes-wrapper">
+          <div id="notes" contenteditable="true" spellcheck="true"></div>
+        </div>
+      </div>
 
-  <!-- Controls bar -->
-  <div class="controls">
-    <div class="control-group">
-      <span class="control-label">Opacity</span>
-      <input type="range" class="opacity-slider" id="opacity-slider" min="10" max="100" value="100">
-      <span id="opacity-value">100%</span>
+      <!-- Controls bar -->
+      <div class="controls">
+        <div class="control-group">
+          <span class="control-label">Opacity</span>
+          <input type="range" class="opacity-slider" id="opacity-slider" min="10" max="100" value="100">
+          <span id="opacity-value">100%</span>
+        </div>
+        <div id="save-status"></div>
+      </div>
     </div>
-    <div id="save-status"></div>
   </div>
 
   <script src="renderer.js"></script>
