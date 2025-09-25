@@ -18,6 +18,58 @@ let tray = null  // Add tray variable
 const userDataPath = app.getPath('userData')
 const notesPath = path.join(userDataPath, 'notes.json')
 
+const defaultNotesState = () => ({
+  notes: '',
+  privacy: true,
+  sidebarCollapsed: true,
+  savedAt: new Date().toISOString()
+})
+
+let notesState = defaultNotesState()
+
+function loadNotesState() {
+  try {
+    if (fs.existsSync(notesPath)) {
+      const data = JSON.parse(fs.readFileSync(notesPath, 'utf8'))
+      notesState = {
+        notes: data.notes ?? '',
+        privacy: data.privacy ?? true,
+        sidebarCollapsed: data.sidebarCollapsed ?? true,
+        savedAt: data.savedAt ?? new Date().toISOString()
+      }
+    } else {
+      notesState = defaultNotesState()
+    }
+  } catch (error) {
+    console.error('loadNotesState error', error)
+    notesState = defaultNotesState()
+  }
+
+  privacyOn = notesState.privacy ?? true
+  return notesState
+}
+
+function persistNotesState(updates = {}) {
+  notesState = {
+    ...notesState,
+    notes: updates.notes !== undefined ? updates.notes : notesState.notes,
+    privacy: updates.privacy !== undefined ? updates.privacy : notesState.privacy,
+    sidebarCollapsed: updates.sidebarCollapsed !== undefined ? updates.sidebarCollapsed : notesState.sidebarCollapsed,
+    savedAt: new Date().toISOString()
+  }
+
+  privacyOn = notesState.privacy ?? true
+
+  try {
+    fs.writeFileSync(notesPath, JSON.stringify(notesState))
+    console.log('Notes state saved →', { privacy: notesState.privacy, sidebarCollapsed: notesState.sidebarCollapsed })
+  } catch (error) {
+    console.error('persistNotesState error', error)
+  }
+}
+
+loadNotesState()
+
 
 
 // Create system tray icon
@@ -460,7 +512,7 @@ function createMenu() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 500,
+    width: 728,
     height: 600,
     
     frame: false,
@@ -471,7 +523,7 @@ function createWindow() {
     titleBarStyle: 'hiddenInset', // Add this line - enables custom titlebar
     
     resizable: true,
-    minWidth: 500,
+    minWidth: 642,
     minHeight: 400,
     
     roundedCorners: true,
@@ -490,32 +542,43 @@ function createWindow() {
 }
 
 // Handle saving notes from the renderer
-ipcMain.on('save-notes', (event, notes) => {
+ipcMain.on('save-notes', (event, payload) => {
   try {
-    privacyOn = notes.privacy ?? privacyOn;     // keep in sync
-    const payload = { notes: notes.notes, privacy: privacyOn, savedAt: new Date() };
-    fs.writeFileSync(notesPath, JSON.stringify(payload));
-    console.log('Notes + privacy saved →', privacyOn);
-  } catch (e) {
-    console.error('save-notes error', e);
+    if (typeof payload === 'string') {
+      persistNotesState({ notes: payload })
+      return
+    }
+
+    if (payload && typeof payload === 'object') {
+      persistNotesState({
+        notes: payload.notes,
+        privacy: payload.privacy,
+        sidebarCollapsed: payload.sidebarCollapsed
+      })
+    }
+  } catch (error) {
+    console.error('save-notes error', error)
+  }
+})
+
+ipcMain.on('save-sidebar-state', (event, collapsed) => {
+  try {
+    persistNotesState({ sidebarCollapsed: !!collapsed })
+  } catch (error) {
+    console.error('save-sidebar-state error', error)
   }
 })
 
 // Handle loading notes
 ipcMain.handle('load-notes', () => {
   try {
-    if (fs.existsSync(notesPath)) {
-      const data = JSON.parse(fs.readFileSync(notesPath, 'utf8'));
-      privacyOn = data.privacy ?? true;     // use saved flag
-      return { notes: data.notes, privacy: privacyOn };
-    }
-    // file does NOT exist yet → first run
-    privacyOn = true;                       // default ON
-    return { notes: '', privacy: true };
-  } catch (e) {
-    console.error('load-notes error', e);
-    privacyOn = true;
-    return { notes: '', privacy: true };
+    const state = loadNotesState()
+    return { notes: state.notes, privacy: state.privacy, sidebarCollapsed: state.sidebarCollapsed }
+  } catch (error) {
+    console.error('load-notes handler error', error)
+    const fallback = defaultNotesState()
+    privacyOn = fallback.privacy
+    return { notes: fallback.notes, privacy: fallback.privacy, sidebarCollapsed: fallback.sidebarCollapsed }
   }
 })
 
@@ -528,6 +591,7 @@ ipcMain.handle('toggle-privacy', () => {
       mainWindow.setContentProtection(privacyOn);
     }
 
+  persistNotesState({ privacy: privacyOn })
 
   return privacyOn;
 });

@@ -1,7 +1,7 @@
 # Presenter Notes App - Complete Project Documentation
 
 ## Project Overview
-A privacy-focused Electron-based macOS app for presenter notes that stay hidden from screenshots and screen shares. Built with content protection API and designed for seamless presentation use.
+A privacy-focused Electron-based macOS app for presenter notes that stay hidden from screenshots and screen shares. Built with Electron's content protection API and designed for seamless presentation use.
 
 **Author:** Evan Pizzolato  
 **Version:** 0.1.0  
@@ -18,8 +18,8 @@ A privacy-focused Electron-based macOS app for presenter notes that stay hidden 
 ├── package.json               # Dependencies and build config
 ├── ElectronNotesApp_documentation.md  # Original docs
 ├── build/                     # Build assets
-│   ├── icon.icns             # macOS app icon
-│   ├── icon.png              # PNG version
+│   ├── icon.icns              # macOS app icon
+│   ├── icon.png               # PNG version
 │   └── entitlements.mac.plist # macOS permissions
 ├── dist/                      # Built applications
 │   ├── mac/                   # Intel Mac build
@@ -38,8 +38,8 @@ A privacy-focused Electron-based macOS app for presenter notes that stay hidden 
 
 ### Variables & Functions
 - **camelCase** for variables: `mainWindow`, `saveTimeout`, `currentFontSize`
-- **camelCase** for functions: `createWindow()`, `updateOpacity()`, `showNotification()`
-- **kebab-case** for CSS classes: `click-through`, `font-controls`, `privacy-badge`
+- **camelCase** for functions: `createWindow()`, `updateOpacity()`, `insertTextFormat()`
+- **kebab-case** for CSS classes: `click-through`, `privacy-badge`, `toolbar-buttons`
 - **UPPER_CASE** for constants: `userDataPath`, `notesPath`
 
 ### IPC Events
@@ -53,18 +53,17 @@ A privacy-focused Electron-based macOS app for presenter notes that stay hidden 
 - **IPC Handlers**: Manages communication between main and renderer processes
 - **Global Shortcuts**: Registers system-wide hotkeys
 - **Menu System**: Creates native macOS menu bar and system tray
-- **Data Persistence**: Handles file I/O for notes storage
+- **Data Persistence**: Handles file I/O for notes storage and privacy state
 
 ### Renderer Process (`renderer.js`)
-- **UI Logic**: Manages textarea, controls, and user interactions
-- **Auto-save**: Debounced saving with 500ms delay
+- **UI Logic**: Manages the contenteditable editor, toolbar, and user interactions
+- **Auto-save**: Debounced saving with a 500ms delay
 - **Import/Export**: File handling for notes backup and sharing
-- **Notifications**: Toast messages for user feedback
-- **State Management**: Tracks font size, opacity, and click-through mode
+- **State Management**: Tracks font size, opacity, click-through mode, toolbar visibility
 
 ### Preload Script (`preload.js`)
-- **Security Bridge**: Exposes safe APIs to renderer via contextBridge
-- **IPC Wrapper**: Provides clean interface for main-renderer communication
+- **Security Bridge**: Exposes safe APIs to renderer via `contextBridge`
+- **IPC Wrapper**: Provides clean channels for renderer-main communication
 
 ## Key Features & Implementation
 
@@ -72,7 +71,7 @@ A privacy-focused Electron-based macOS app for presenter notes that stay hidden 
 ```javascript
 mainWindow.setContentProtection(true)  // Hides from screenshots
 ```
-- Visual "PRIVATE MODE ON" badge
+- Visual `PRIVACY MODE` badge inside the UI
 - Works with macOS native screenshot tools
 - Content protection API integration
 
@@ -85,15 +84,15 @@ mainWindow.setContentProtection(true)  // Hides from screenshots
 ### 3. Rich Text Editing
 - **Text Formatting**: Bold (Cmd+B), Italic (Cmd+I), Underline (Cmd+U)
 - **Lists**: Bullet lists (Cmd+L), Numbered lists (Cmd+D)
-- **Font Size**: Dropdown selector (12-36px) + increment/decrement buttons
-- **Toolbar**: Visual formatting toolbar with active state indicators
+- **Font Size**: Dropdown selector (12-36px)
+- **Toolbar**: Gradient toolbar with SVG icons, active state indicators, and hide/show toggle
 - **ContentEditable**: HTML-based rich text editor with auto-save
 
 ### 4. Click-Through Mode
 ```javascript
 mainWindow.setIgnoreMouseEvents(true)  // Clicks pass through
 ```
-- Orange border visual indicator
+- Animated overlay indicator
 - Disables text editing while active
 - Useful for overlay during presentations
 
@@ -101,15 +100,14 @@ mainWindow.setIgnoreMouseEvents(true)  // Clicks pass through
 - **Location**: `~/Library/Application Support/presenter-notes/notes.json`
 - **Format**: JSON with notes content and metadata
 - **Auto-save**: Debounced (500ms after typing stops)
-- **Backup**: Export/import functionality
+- **Backup**: Export/import functionality for markdown/plain text and JSON backups
 
 ### 6. UI Controls
-- Opacity slider (10-100%)
-- Font size controls (+/-/reset) + dropdown selector
-- Rich text formatting toolbar
-- Save status indicator
-- Notification toasts
-- Enhanced transparency with text readability features
+- Gradient toolbar with hide/show toggle and 1px separators
+- Font size dropdown (12–36 px) with custom chevron icon
+- Formatting buttons (bold, italic, underline, bullet list, numbered list)
+- Opacity slider (10–100%) with gradient track
+- Save status indicator inside the window header
 
 ## Package Configuration
 
@@ -138,1352 +136,6 @@ npm run dist-mac # Create distribution DMG
 ## Complete Source Code
 
 ### main.js - Main Electron Process
-```javascript
-const { app, BrowserWindow, ipcMain, Menu, globalShortcut, Tray, nativeImage } = require('electron')
-const path = require('path')
-const fs = require('fs')
-
-let mainWindow
-let tray = null  // Add tray variable
-
-// Get the path where we'll store notes
-const userDataPath = app.getPath('userData')
-const notesPath = path.join(userDataPath, 'notes.json')
-
-
-
-// Create system tray icon
-function createTray() {
-  // Create a 16x16 template image for the tray (macOS style)
-  // For now we'll use a simple colored square - you can add a real icon later
-  const icon = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAdgAAAHYBTnsmCAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAEISURBVDiNpZMxasNAEEVfxEbgQpVOkELnSCFwYXAhcKETpBC4ELjQCVIIXAhcCFwIXAhc6AQpBC4ELgQuBC4ELgQuBDswi7SSVmt7YGCZnfn/zZ+ZFQAhxBfQAzpAG2gBTaABXANXQA2oAudABTgDysApcAIcA0fAIXAAFIA9IA/sgAwQAx6AB7x730MKuAL2gV0gC2wDW8AmkAY2gDUgCawCCSAOxIAVYBlYAhaB+aQQYuBL+GaSmB7TMc0kdY5MkmctdzAzBy3/m4M5c9Cz3EGStXRSyTQJIT4tJelYq6qqSikrlmVp7cN2u91dSvlqPpNSjv8HAKjruu84TlHXdTdN04HneW8TN30DLGJhTKHhDDwAAAAASUVORK5CYII=')
-  
-  tray = new Tray(icon)
-  tray.setToolTip('Presenter Notes')
-
-  //Show Inspect Element devtool
-  //mainWindow.webContents.toggleDevTools();
-  
-  // Create tray menu
-  const trayMenu = Menu.buildFromTemplate([
-    {
-      label: 'Show Notes',
-      accelerator: 'Cmd+Shift+N',
-      click: () => {
-        if (mainWindow) {
-          mainWindow.show()
-          mainWindow.focus()
-        }
-      }
-    },
-    {
-      label: 'Hide Notes',
-      click: () => {
-        if (mainWindow) {
-          mainWindow.hide()
-        }
-      }
-    },
-    { type: 'separator' },
-    {
-      label: 'Opacity',
-      submenu: [
-        {
-          label: '100% (Opaque)',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.webContents.send('change-opacity', 1.0)
-            }
-          }
-        },
-        {
-          label: '70%',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.webContents.send('change-opacity', 0.7)
-            }
-          }
-        },
-        {
-          label: '40%',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.webContents.send('change-opacity', 0.4)
-            }
-          }
-        },
-        {
-          label: '20% (Very Transparent)',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.webContents.send('change-opacity', 0.2)
-            }
-          }
-        },
-        {
-          label: '10% (Nearly Invisible)',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.webContents.send('change-opacity', 0.1)
-            }
-          }
-        }
-      ]
-    },
-    { type: 'separator' },
-    {
-      label: 'Font Size',
-      submenu: [
-        {
-          label: 'Increase',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.webContents.send('change-font-size', 'increase')
-            }
-          }
-        },
-        {
-          label: 'Decrease',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.webContents.send('change-font-size', 'decrease')
-            }
-          }
-        },
-        {
-          label: 'Reset',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.webContents.send('change-font-size', 'reset')
-            }
-          }
-        }
-      ]
-    },
-    { type: 'separator' },
-    {
-      label: 'Quit',
-      click: () => {
-        app.quit()
-      }
-    }
-  ])
-  
-  tray.setContextMenu(trayMenu)
-  
-  // Show window on tray icon click (left click on Mac)
-  tray.on('click', () => {
-    if (mainWindow) {
-      if (mainWindow.isVisible()) {
-        mainWindow.hide()
-      } else {
-        mainWindow.show()
-        mainWindow.focus()
-      }
-    }
-  })
-}
-
-// Register global shortcuts
-function registerGlobalShortcuts() {
-  // Toggle show/hide with Cmd+Shift+N
-  const toggleRegistered = globalShortcut.register('Command+Shift+N', () => {
-    if (mainWindow) {
-      if (mainWindow.isVisible()) {
-        mainWindow.hide()
-      } else {
-        mainWindow.show()
-        mainWindow.focus()
-      }
-    }
-  })
-  
-  if (!toggleRegistered) {
-    console.log('Failed to register Cmd+Shift+N - might be in use by another app')
-  }
-  
-// Cycle opacity with Cmd+Shift+O
-let currentOpacityIndex = 0
-const opacities = [1.0, 0.7, 0.4, 0.2, 0.1]
-
-const opacityRegistered = globalShortcut.register('Command+Shift+O', () => {
-  if (mainWindow) {
-    currentOpacityIndex = (currentOpacityIndex + 1) % opacities.length
-    mainWindow.webContents.send('change-opacity', opacities[currentOpacityIndex])
-    
-    // Show a quick notification of the opacity level
-    const percentages = ['100%', '70%', '40%', '20%', '10%']
-    mainWindow.webContents.send('show-notification', `Opacity: ${percentages[currentOpacityIndex]}`)
-  }
-})
-  
-  if (!opacityRegistered) {
-    console.log('Failed to register Cmd+Shift+O - might be in use by another app')
-  }
-  
-  // Quick font size shortcuts
-  const fontIncreaseRegistered = globalShortcut.register('Command+Shift+Plus', () => {
-    if (mainWindow) {
-      mainWindow.webContents.send('change-font-size', 'increase')
-      mainWindow.webContents.send('show-notification', 'Font size increased')
-    }
-  })
-  
-  const fontDecreaseRegistered = globalShortcut.register('Command+Shift+-', () => {
-    if (mainWindow) {
-      mainWindow.webContents.send('change-font-size', 'decrease')
-      mainWindow.webContents.send('show-notification', 'Font size decreased')
-    }
-  })
-
-  // Toggle click-through mode with Cmd+Shift+T
-  const clickThroughRegistered = globalShortcut.register('Command+Shift+T', () => {
-    if (mainWindow) {
-      // Get current state from the menu
-      const menu = Menu.getApplicationMenu()
-      const viewMenu = menu.items.find(item => item.label === 'View')
-      const clickThroughItem = viewMenu.submenu.items.find(item => item.label === 'Click-through Mode')
-      
-      // Toggle the state
-      const newState = !clickThroughItem.checked
-      clickThroughItem.checked = newState
-      
-      // Apply the change
-      mainWindow.setIgnoreMouseEvents(newState)
-      mainWindow.webContents.send('toggle-click-through', newState)
-      
-      // Show notification
-      const status = newState ? 'ON - Window won\'t block clicks' : 'OFF - Window is interactive'
-      mainWindow.webContents.send('show-notification', `Click-through: ${status}`)
-    }
-  })
-  
-  console.log('  Cmd+Shift+T (click-through):', clickThroughRegistered)
-  
-  // Log registration status
-  console.log('Global shortcuts registered:')
-  console.log('  Cmd+Shift+N (toggle):', toggleRegistered)
-  console.log('  Cmd+Shift+O (opacity):', opacityRegistered)
-  console.log('  Cmd+Shift+Plus (font+):', fontIncreaseRegistered)
-  console.log('  Cmd+Shift+- (font-):', fontDecreaseRegistered)
-}
-
-// Create the application menu (your existing createMenu function stays the same)
-function createMenu() {
-  const template = [
-    {
-      label: 'Presenter Notes',
-      submenu: [
-        {
-          label: 'About Presenter Notes',
-          role: 'about'
-        },
-        { type: 'separator' },
-        {
-          label: 'Hide Notes',
-          accelerator: 'Cmd+H',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.hide()
-            }
-          }
-        },
-        {
-          label: 'Show Notes',
-          accelerator: 'Cmd+Shift+H',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.show()
-            }
-          }
-        },
-        { type: 'separator' },
-        {
-          label: 'Quit',
-          accelerator: 'Cmd+Q',
-          click: () => {
-            app.quit()
-          }
-        },
-        {
-            label: '  Click-through: Cmd+Shift+T',
-            enabled: false
-          }
-      ]
-    },
-    {
-        label: 'File',
-        submenu: [
-          {
-            label: 'Export Notes...',
-            accelerator: 'Cmd+E',
-            click: async () => {
-              if (mainWindow) {
-                mainWindow.webContents.send('export-notes')
-              }
-            }
-          },
-          {
-            label: 'Import Notes...',
-            accelerator: 'Cmd+I',
-            click: async () => {
-              if (mainWindow) {
-                mainWindow.webContents.send('import-notes')
-              }
-            }
-          },
-          { type: 'separator' },
-          {
-            label: 'Export Backup (JSON)...',
-            click: async () => {
-              if (mainWindow) {
-                mainWindow.webContents.send('export-backup')
-              }
-            }
-          },
-          {
-            label: 'Import Backup (JSON)...',
-            click: async () => {
-              if (mainWindow) {
-                mainWindow.webContents.send('import-backup')
-              }
-            }
-          }
-        ]
-      },
-    {
-      label: 'Edit',
-      submenu: [
-        { label: 'Undo', accelerator: 'Cmd+Z', role: 'undo' },
-        { label: 'Redo', accelerator: 'Cmd+Shift+Z', role: 'redo' },
-        { type: 'separator' },
-        { label: 'Cut', accelerator: 'Cmd+X', role: 'cut' },
-        { label: 'Copy', accelerator: 'Cmd+C', role: 'copy' },
-        { label: 'Paste', accelerator: 'Cmd+V', role: 'paste' },
-        { label: 'Select All', accelerator: 'Cmd+A', role: 'selectAll' }
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        {
-          label: 'Increase Font Size',
-          accelerator: 'Cmd+Plus',
-          click: () => {
-            mainWindow.webContents.send('change-font-size', 'increase')
-          }
-        },
-        {
-          label: 'Decrease Font Size',
-          accelerator: 'Cmd+-',
-          click: () => {
-            mainWindow.webContents.send('change-font-size', 'decrease')
-          }
-        },
-        {
-          label: 'Reset Font Size',
-          accelerator: 'Cmd+0',
-          click: () => {
-            mainWindow.webContents.send('change-font-size', 'reset')
-          }
-        },
-        { type: 'separator' },
-        {
-          label: 'Opacity',
-          submenu: [
-            {
-              label: '100%',
-              click: () => mainWindow.webContents.send('change-opacity', 1.0)
-            },
-            {
-              label: '80%',
-              click: () => mainWindow.webContents.send('change-opacity', 0.8)
-            },
-            {
-              label: '60%',
-              click: () => mainWindow.webContents.send('change-opacity', 0.6)
-            },
-            {
-              label: '40%',
-              click: () => mainWindow.webContents.send('change-opacity', 0.4)
-            },
-            {
-              label: '20%',
-              click: () => mainWindow.webContents.send('change-opacity', 0.2)
-            },
-            {
-              label: '10%',
-              click: () => mainWindow.webContents.send('change-opacity', 0.1)
-            }
-          ]
-        },
-        { type: 'separator' },
-        {
-          label: 'Click-through Mode',
-          type: 'checkbox',
-          checked: false,
-          accelerator: 'Cmd+Shift+T',
-          click: (menuItem) => {
-            if (mainWindow) {
-              mainWindow.setIgnoreMouseEvents(menuItem.checked)
-              mainWindow.webContents.send('toggle-click-through', menuItem.checked)
-            }
-          }
-        }
-      ]
-    },
-    {
-      label: 'Window',
-      submenu: [
-        { label: 'Minimize', accelerator: 'Cmd+M', role: 'minimize' },
-        { label: 'Close', accelerator: 'Cmd+W', role: 'close' }
-      ]
-    },
-    {
-      label: 'Help',
-      submenu: [
-        {
-          label: '✓ Privacy Mode Active',
-          enabled: false
-        },
-        { type: 'separator' },
-        {
-          label: 'Global Shortcuts:',
-          enabled: false
-        },
-        {
-          label: '  Toggle: Cmd+Shift+N',
-          enabled: false
-        },
-        {
-          label: '  Opacity: Cmd+Shift+O',
-          enabled: false
-        },
-        {
-          label: '  Font +: Cmd+Shift+Plus',
-          enabled: false
-        },
-        {
-          label: '  Font -: Cmd+Shift+Minus',
-          enabled: false
-        }
-      ]
-    }
-  ]
-
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
-}
-
-function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 400,
-    height: 600,
-    
-    frame: false,
-    transparent: true,
-    alwaysOnTop: true,
-    backgroundColor: '#00000000',  // Add this line - fully transparent
-    visibleOnAllWorkspaces: true,
-    
-    resizable: true,
-    minWidth: 300,
-    minHeight: 400,
-    
-    roundedCorners: true,
-    
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
-    }
-  })
-
-  mainWindow.setContentProtection(true)
-  console.log('Content protection enabled')
-  
-  mainWindow.loadFile('index.html')
-}
-
-// Handle saving notes from the renderer
-ipcMain.on('save-notes', (event, notes) => {
-  try {
-    fs.writeFileSync(notesPath, JSON.stringify({ notes, savedAt: new Date() }))
-    console.log('Notes saved')
-  } catch (error) {
-    console.error('Failed to save notes:', error)
-  }
-})
-
-// Handle loading notes
-ipcMain.handle('load-notes', () => {
-  try {
-    if (fs.existsSync(notesPath)) {
-      const data = JSON.parse(fs.readFileSync(notesPath, 'utf8'))
-      return data.notes
-    }
-    return ''
-  } catch (error) {
-    console.error('Failed to load notes:', error)
-    return ''
-  }
-})
-
-// Update the app.whenReady
-app.whenReady().then(() => {
-  createMenu()
-  createWindow()
-  createTray()  // Add tray icon
-  registerGlobalShortcuts()  // Register global hotkeys
-})
-
-// Clean up global shortcuts when app quits
-app.on('will-quit', () => {
-  globalShortcut.unregisterAll()
-})
-
-app.on('window-all-closed', () => {
-  app.quit()
-})
-```
-
-### renderer.js - Renderer Process (UI Logic)
-```javascript
-// This runs in your web page
-let saveTimeout
-let notificationTimeout
-let currentFontSize = 18  // Default font size
-let currentOpacity = 1.0  // Default opacity
-
-// Function to show temporary notifications
-function showNotification(message) {
-  const notification = document.getElementById('notification')
-  notification.textContent = message
-  notification.style.display = 'block'
-  
-  clearTimeout(notificationTimeout)
-  
-  notificationTimeout = setTimeout(() => {
-    notification.style.display = 'none'
-  }, 1500)
-}
-
-// Function to download a file
-function downloadFile(content, filename, type = 'text/plain') {
-  const blob = new Blob([content], { type })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-}
-
-// Function to read uploaded file
-function readFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target.result)
-    reader.onerror = reject
-    reader.readAsText(file)
-  })
-}
-
-// Function to update font size
-function updateFontSize(direction) {
-  const textarea = document.getElementById('notes')
-  
-  if (direction === 'increase') {
-    currentFontSize = Math.min(currentFontSize + 2, 32)
-  } else if (direction === 'decrease') {
-    currentFontSize = Math.max(currentFontSize - 2, 12)
-  } else if (direction === 'reset') {
-    currentFontSize = 18
-  }
-  
-  textarea.style.fontSize = currentFontSize + 'px'
-}
-
-// Function to update opacity
-function updateOpacity(value) {
-  currentOpacity = value
-  
-  // For transparent window effect, we need to change the background alpha values
-  const header = document.querySelector('.header')
-  const controls = document.querySelector('.controls')
-  const content = document.querySelector('.content')
-  const notesWrapper = document.getElementById('notes-wrapper')
-  const textarea = document.getElementById('notes')
-  
-  // Calculate the actual opacity for the notes area (minimum 40%)
-  const notesOpacity = Math.max(value, 0.4)
-  
-  // Apply rgba backgrounds with the opacity value for window transparency
-  document.body.style.backgroundColor = `rgba(255, 255, 255, ${value * 0.95})`
-  
-  // Header and controls always fully opaque backgrounds
-  header.style.backgroundColor = 'rgba(248, 249, 250, 1)'
-  controls.style.backgroundColor = 'rgba(255, 255, 255, 1)'
-  
-  // Content area with variable transparency
-  content.style.backgroundColor = `rgba(255, 255, 255, ${value * 0.95})`
-  
-  // Notes wrapper with minimum 40% opacity
-  notesWrapper.style.backgroundColor = `rgba(255, 255, 255, ${notesOpacity * 0.95})`
-  
-  // If opacity is very low, enhance text readability
-  if (value < 0.4) {
-    textarea.style.fontWeight = '400'
-    textarea.style.textShadow = '0 0 2px rgba(255,255,255,0.8)'
-  } else {
-    textarea.style.fontWeight = 'normal'
-    textarea.style.textShadow = 'none'
-  }
-  
-  // Update the display
-  const percentage = Math.round(value * 100)
-  document.getElementById('opacity-value').textContent = percentage + '%'
-  document.getElementById('opacity-slider').value = percentage
-}
-
-window.addEventListener('DOMContentLoaded', async () => {
-  const textarea = document.getElementById('notes')
-  const opacitySlider = document.getElementById('opacity-slider')
-  
-  // Initialize opacity to ensure proper setup
-  updateOpacity(1.0)
-  
-  // Load saved notes
-  const savedNotes = await window.api.loadNotes()
-  if (savedNotes) {
-    textarea.value = savedNotes
-  }
-  
-  // Auto-save as user types (with debounce)
-  textarea.addEventListener('input', (e) => {
-    document.getElementById('save-status').textContent = 'Saving...'
-    clearTimeout(saveTimeout)
-    
-    saveTimeout = setTimeout(() => {
-      window.api.saveNotes(e.target.value)
-      document.getElementById('save-status').textContent = 'Saved'
-      
-      setTimeout(() => {
-        document.getElementById('save-status').textContent = ''
-      }, 2000)
-    }, 500)
-  })
-  
-  // Opacity slider
-  opacitySlider.addEventListener('input', (e) => {
-    const value = e.target.value / 100
-    updateOpacity(value)
-  })
-  
-  // Font size buttons
-  document.getElementById('font-decrease').addEventListener('click', () => {
-    updateFontSize('decrease')
-    showNotification('Font size decreased')
-  })
-  
-  document.getElementById('font-reset').addEventListener('click', () => {
-    updateFontSize('reset')
-    showNotification('Font size reset')
-  })
-  
-  document.getElementById('font-increase').addEventListener('click', () => {
-    updateFontSize('increase')
-    showNotification('Font size increased')
-  })
-  
-  // File input for imports (hidden, triggered programmatically)
-  const fileInput = document.createElement('input')
-  fileInput.type = 'file'
-  fileInput.style.display = 'none'
-  document.body.appendChild(fileInput)
-  
-  // Handle file selection for imports
-  fileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    
-    try {
-      const content = await readFile(file)
-      
-      if (file.name.endsWith('.json')) {
-        // Import JSON backup
-        const data = JSON.parse(content)
-        if (data.notes) {
-          textarea.value = data.notes
-          await window.api.saveNotes(data.notes)
-          showNotification('Backup imported successfully')
-        }
-      } else {
-        // Import as plain text/markdown
-        textarea.value = content
-        await window.api.saveNotes(content)
-        showNotification('Notes imported successfully')
-      }
-    } catch (error) {
-      console.error('Import failed:', error)
-      showNotification('Import failed')
-    }
-    
-    // Reset file input
-    fileInput.value = ''
-  })
-  
-  // Export handlers
-  window.api.onExportNotes(async () => {
-    const notes = textarea.value
-    const timestamp = new Date().toISOString().split('T')[0]
-    downloadFile(notes, `presenter-notes-${timestamp}.md`, 'text/markdown')
-    showNotification('Notes exported')
-  })
-  
-  window.api.onImportNotes(() => {
-    fileInput.accept = '.txt,.md,.markdown'
-    fileInput.click()
-  })
-  
-  window.api.onExportBackup(async () => {
-    const notes = textarea.value
-    const timestamp = new Date().toISOString()
-    const backup = {
-      notes: notes,
-      exportedAt: timestamp,
-      fontSize: currentFontSize,
-      opacity: currentOpacity
-    }
-    downloadFile(JSON.stringify(backup, null, 2), `notes-backup-${timestamp.split('T')[0]}.json`, 'application/json')
-    showNotification('Backup exported')
-  })
-  
-  window.api.onImportBackup(() => {
-    fileInput.accept = '.json'
-    fileInput.click()
-  })
-})
-
-// Handle font size changes from menu
-window.api.onFontSizeChange((event, direction) => {
-  updateFontSize(direction)
-})
-
-// Handle opacity changes from menu
-window.api.onOpacityChange((event, opacity) => {
-  updateOpacity(opacity)
-})
-
-// Handle notification display
-window.api.onShowNotification((event, message) => {
-  showNotification(message)
-})
-
-// Handle click-through mode toggle
-window.api.onToggleClickThrough((event, isClickThrough) => {
-  const body = document.body
-  const textarea = document.getElementById('notes')
-  const controls = document.querySelector('.controls')
-  
-  if (isClickThrough) {
-    body.classList.add('click-through')
-    textarea.disabled = true
-    textarea.style.cursor = 'default'
-    controls.style.pointerEvents = 'none'
-    controls.style.opacity = '0.5'
-    
-    textarea.placeholder = 'CLICK-THROUGH MODE ACTIVE\n\nWindow won\'t intercept clicks.\nPress Cmd+Shift+T to edit notes again.'
-  } else {
-    body.classList.remove('click-through')
-    textarea.disabled = false
-    textarea.style.cursor = 'text'
-    controls.style.pointerEvents = 'auto'
-    controls.style.opacity = '1'
-    
-    textarea.placeholder = 'Type your presenter notes here...\n\n• They auto-save as you type\n• Won\'t appear in screenshots\n• Always stays on top\n\nGlobal Shortcuts:\n• Cmd+Shift+N: Toggle window\n• Cmd+Shift+O: Cycle opacity\n• Cmd+Shift+T: Click-through mode\n• Cmd+Shift+Plus/Minus: Font size'
-  }
-})
-```
-
-### preload.js - Secure IPC Bridge
-```javascript
-const { contextBridge, ipcRenderer } = require('electron')
-
-contextBridge.exposeInMainWorld('api', {
-  saveNotes: (notes) => ipcRenderer.send('save-notes', notes),
-  loadNotes: () => ipcRenderer.invoke('load-notes'),
-  
-  // Menu commands
-  onFontSizeChange: (callback) => ipcRenderer.on('change-font-size', callback),
-  onOpacityChange: (callback) => ipcRenderer.on('change-opacity', callback),
-  
-  // Notifications
-  onShowNotification: (callback) => ipcRenderer.on('show-notification', callback),
-  
-  // Click-through
-  onToggleClickThrough: (callback) => ipcRenderer.on('toggle-click-through', callback),
-  
-  // Add import/export handlers
-  onExportNotes: (callback) => ipcRenderer.on('export-notes', callback),
-  onImportNotes: (callback) => ipcRenderer.on('import-notes', callback),
-  onExportBackup: (callback) => ipcRenderer.on('export-backup', callback),
-  onImportBackup: (callback) => ipcRenderer.on('import-backup', callback)
-})
-```
-
-### index.html - UI Layout and Styling
-```html
-<!DOCTYPE html>
-<html>
-
-<head>
-  <title>Presenter Notes</title>
-  <style>
-    :root {
-      /* Light mode color palette */
-
-      --bg-primary: rgba(255, 255, 255, 1);
-      /* Main white background */
-      --bg-secondary: #f8f9fa;
-      /* Slightly off-white for contrast */
-      --bg-tertiary: #e9ecef;
-      /* Light gray for borders/dividers */
-
-      /* Blue accent colors */
-      --blue-primary: #0066cc;
-      /* Main blue for buttons */
-      --blue-hover: #0056b3;
-      /* Darker blue for hover states */
-      --blue-light: #e3f2fd;
-      /* Very light blue for backgrounds */
-      --blue-border: #90caf9;
-      /* Medium blue for borders */
-
-      /* Text colors */
-      --text-primary: #212529;
-      /* Dark gray for main text */
-      --text-secondary: #6c757d;
-      /* Medium gray for secondary text */
-      --text-muted: #adb5bd;
-      /* Light gray for muted text */
-
-      /* Status colors */
-      --success: #28a745;
-      /* Green for success states */
-      --warning: #ffc107;
-      /* Orange for warnings */
-      --error: #dc3545;
-      /* Red for errors */
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: rgba(255, 255, 255, 0.95);
-      /* Using rgba */
-      color: var(--text-primary);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    .header {
-  background-color: rgba(248, 249, 250, 1); /* Fully opaque */
-  border-bottom: 1px solid var(--bg-tertiary);
-  padding: 12px 16px;
-  -webkit-app-region: drag;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-    .header h1 {
-      color: var(--text-primary);
-      font-size: 16px;
-      font-weight: 600;
-      margin: 0;
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .title {
-      font-size: 14px;
-      font-weight: 500;
-      opacity: 0.9;
-    }
-
-    #save-status {
-      font-size: 12px;
-      color: var(--success);
-    }
-
-    .privacy-badge {
-      background-color: var(--success);
-      color: white;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 400;
-      display: inline-block;
-      box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
-    }
-
-    /* Click-through mode styling */
-    body.click-through {
-      animation: click-through-pulse 2s infinite;
-    }
-
-    @keyframes click-through-pulse {
-
-      0%,
-      100% {
-        border-color: var(--bg-tertiary);
-        box-shadow: 0 0 10px rgba(255, 165, 0, 0.3);
-      }
-
-      50% {
-        border-color: var(--bg-tertiary);
-        box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
-      }
-    }
-
-    body.click-through .header {
-      background-color: var(--bg-primary);
-    }
-
-    body.click-through #notes {
-      background-color: var(--bg-primary);
-      border-color: var(--bg-tertiary);
-    }
-
-    body.click-through .click-through-badge {
-      display: inline-block;
-    }
-
-    .click-through-badge {
-      display: none;
-      background-color: var(--warning);
-      color: white;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      margin-left: 8px;
-      animation: pulse 2s infinite;
-    }
-
-    .content {
-  flex: 1;
-  padding: 15px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  background-color: rgba(255, 255, 255, 0.95); /* Using rgba */
-}
-
-#notes-wrapper {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  border-radius: 8px;
-  background-color: var(--bg-primary);
-  transition: background-color 0.2s ease;
-}
-#notes {
-  flex: 1;
-  background-color: transparent; /* Transparent to show wrapper background */
-  color: var(--text-primary);
-  border: none;
-  border-radius: 8px;
-  padding: 16px;
-  font-size: 14px;
-  line-height: 1.5;
-  resize: none;
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  outline: none;
-  transition: font-weight 0.2s ease, text-shadow 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-
-    #notes::placeholder {
-      color: var(--text-secondary);
-    }
-
-    /* Controls bar */
-    .controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  padding: 10px 15px;
-  background-color: rgba(255, 255, 255, 1); /* Fully opaque */
-  border-top: 1px solid var(--bg-tertiary);
-  -webkit-app-region: no-drag;
-}
-
-    .control-group {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .control-label {
-      font-size: 12px;
-      color: var(--text-secondary);
-      min-width: 50px;
-    }
-
-    /* Opacity slider */
-    .slider {
-      -webkit-appearance: none;
-      width: 100%;
-      height: 4px;
-      background: var(--bg-tertiary);
-      border-radius: 2px
-    }
-
-    .slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
-      background: var(--blue-primary);
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0, 102, 204, 0.3);
-      transition: transform 0.2s ease;
-    }
-
-    .slider::-webkit-slider-thumb:hover {
-      transform: scale(1.1);
-    }
-
-    #opacity-value {
-      font-size: 12px;
-      color: var(--text-secondary);
-      min-width: 35px;
-    }
-
-    /* Font size buttons */
-    .font-controls {
-      display: flex;
-      gap: 4px;
-    }
-
-    .font-btn {
-      width: 24px;
-      height: 24px;
-      border: 1px solid var(--bg-tertiary);
-      color: var(--text-primary);
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-      -webkit-app-region: no-drag;
-    }
-
-    .font-btn:hover {
-      border-color: var(--bg-tertiary);
-    }
-
-    .font-btn:active {
-      background: var(--bg-tertiary);
-    }
-
-    /* Notification toast */
-    #notification {
-      display: none;
-      position: absolute;
-      font-size: 14px;
-      background-color: var(--bg-primary);
-      color: var(--text-primary);
-      border: 1px solid var(--bg-tertiary);
-      border-radius: 8px;
-      padding: 12px 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 1000;
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    /* Custom scrollbar for textarea */
-    #notes::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    #notes::-webkit-scrollbar-track {
-      background: var(--bg-tertiary);
-      border-radius: 4px;
-    }
-
-    #notes::-webkit-scrollbar-thumb {
-      background: var(--bg-tertiary);
-      border-radius: 4px;
-    }
-
-    #notes::-webkit-scrollbar-thumb:hover {
-      background: var(--bg-tertiary);
-    }
-  </style>
-</head>
-
-<body>
-  <div class="header">
-    <div class="header-left">
-      <div class="title">Presenter Notes</div>
-      <div id="save-status"></div>
-    </div>
-    <div>
-      <span class="privacy-badge">PRIVATE MODE ON</span>
-      <span class="click-through-badge">CLICK-THROUGH</span>
-    </div>
-  </div>
-
-  <div class="content">
-    <!-- Notification toast -->
-    <div id="notification"></div>
-
-    <div id="notes-wrapper">
-      <textarea id="notes"></textarea>
-    </div>
-  </div>
-
-  <!-- Controls bar -->
-  <div class="controls">
-    <div class="control-group">
-      <span class="control-label">Opacity:</span>
-      <input type="range" class="slider" id="opacity-slider" min="10" max="100" value="100">
-      <span id="opacity-value">100%</span>
-    </div>
-
-    <div class="control-group">
-      <span class="control-label">Font:</span>
-      <div class="font-controls">
-        <button class="font-btn" id="font-decrease">−</button>
-        <button class="font-btn" id="font-reset">R</button>
-        <button class="font-btn" id="font-increase">+</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="renderer.js"></script>
-</body>
-
-</html>
-```
-
-### package.json - Dependencies and Build Configuration
-```json
-{
-  "name": "presenter-notes",
-  "version": "0.1.0",
-  "description": "Privacy-focused presenter notes that stay hidden from screenshots and screen shares",
-  "main": "main.js",
-  "scripts": {
-    "start": "electron main.js",
-    "dist": "electron-builder",
-    "dist-mac": "electron-builder --mac"
-  },
-  "devDependencies": {
-    "electron": "^latest",
-    "electron-builder": "^latest"
-  },
-  "build": {
-    "appId": "com.yourname.presenter-notes",
-    "productName": "Presenter Notes",
-    "directories": {
-      "output": "dist"
-    },
-    "mac": {
-      "category": "public.app-category.productivity",
-      "icon": "build/icon.icns",
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
-      "darkModeSupport": true,
-      "target": [
-        {
-          "target": "dmg",
-          "arch": ["x64", "arm64"]
-        }
-      ]
-    },
-    "dmg": {
-      "contents": [
-        {
-          "x": 130,
-          "y": 220
-        },
-        {
-          "x": 410,
-          "y": 220,
-          "type": "link",
-          "path": "/Applications"
-        }
-      ],
-      "title": "Presenter Notes Installer"
-    }
-  },
-  "author": "Evan Pizzolato",
-  "license": "MIT"
-}
-```
-
-## CSS Architecture
-
-### Color System
-```css
-:root {
-  --bg-primary: rgba(255, 255, 255, 0.95);
-  --blue-primary: #0066cc;
-  --text-primary: #212529;
-  --success: #28a745;
-  --warning: #ffc107;
-}
-```
-
-### Layout Structure
-- **Header**: Draggable title bar with privacy badge
-- **Content**: Flexible textarea with custom scrollbar
-- **Controls**: Bottom bar with opacity and font controls
-- **Notifications**: Fixed position toast messages
-
-## File Storage & Data Format
-
-### Notes Storage
-```json
-{
-  "notes": "User's note content here...",
-  "savedAt": "2024-01-15T10:30:00.000Z"
-}
-```
-
-### Backup Format
-```json
-{
-  "notes": "Content...",
-  "exportedAt": "2024-01-15T10:30:00.000Z",
-  "fontSize": 18,
-  "opacity": 1.0
-}
-```
-
-## Development Workflow
-
-### Local Development
-1. `npm start` - Launch in development mode
-2. Edit files in real-time
-3. Test privacy features with screenshots
-4. Use global shortcuts for testing
-
-### Building for Distribution
-1. `npm run dist-mac` - Create DMG
-2. Test on target macOS versions
-3. Verify privacy protection works
-4. Check all global shortcuts function
-
-## Known Limitations & Future Work
-
-### Current Limitations
-- Not code-signed (shows security warning)
-- Basic icon styling
-- No auto-updater
-- Limited to macOS
-
-### Production Requirements
-- Apple Developer account for code signing
-- Notarization for distribution
-- Auto-updater implementation
-- Cross-platform support
-
-## Testing Checklist
-
-### Core Functionality
-- [ ] Notes save and load correctly
-- [ ] Privacy mode hides from screenshots
-- [ ] Global shortcuts work system-wide
-- [ ] Click-through mode functions
-- [ ] Import/export works
-- [ ] Opacity and font controls work
-- [ ] System tray menu functions
-
-### Privacy Testing
-- [ ] `Cmd+Shift+4` screenshot test
-- [ ] Screen recording test
-- [ ] Multiple monitor test
-- [ ] Full-screen app overlay test
-
-## Quick Start for New Developers
-
-1. **Clone and Install**
-   ```bash
-   cd /Users/evanpizzolato/Documents/Code/notesapp
-   npm install
-   ```
-
-2. **Development**
-   ```bash
-   npm start
-   ```
-
-3. **Build**
-   ```bash
-   npm run dist-mac
-   ```
-
-4. **Test Privacy**
-   - Open app
-   - Take screenshot with `Cmd+Shift+4`
-   - Verify window is not captured
-
-## File Locations Summary
-
-- **Source Code**: `/Users/evanpizzolato/Documents/Code/notesapp/`
-- **Built Apps**: `dist/mac/` and `dist/mac-arm64/`
-- **User Data**: `~/Library/Application Support/presenter-notes/`
-- **Icons**: `build/icon.icns` and `build/icon.png`
-
----
-
-This documentation provides a complete overview of the Presenter Notes app structure, code organization, and development workflow for easy handoff to other developers or agents.
-
-## Full Source Snapshot (current)
-
-### main.js
 ```javascript
 const { app, BrowserWindow, ipcMain, Menu, globalShortcut, Tray, nativeImage } = require('electron')
 const path = require('path')
@@ -1665,10 +317,6 @@ const opacityRegistered = globalShortcut.register('Command+Shift+O', () => {
   if (mainWindow) {
     currentOpacityIndex = (currentOpacityIndex + 1) % opacities.length
     mainWindow.webContents.send('change-opacity', opacities[currentOpacityIndex])
-    
-    // Show a quick notification of the opacity level
-    const percentages = ['100%', '70%', '40%', '20%', '10%']
-    mainWindow.webContents.send('show-notification', `Opacity: ${percentages[currentOpacityIndex]}`)
   }
 })
   
@@ -1680,14 +328,12 @@ const opacityRegistered = globalShortcut.register('Command+Shift+O', () => {
   const fontIncreaseRegistered = globalShortcut.register('Command+Shift+Plus', () => {
     if (mainWindow) {
       mainWindow.webContents.send('change-font-size', 'increase')
-      mainWindow.webContents.send('show-notification', 'Font size increased')
     }
   })
   
   const fontDecreaseRegistered = globalShortcut.register('Command+Shift+-', () => {
     if (mainWindow) {
       mainWindow.webContents.send('change-font-size', 'decrease')
-      mainWindow.webContents.send('show-notification', 'Font size decreased')
     }
   })
 
@@ -1706,10 +352,6 @@ const opacityRegistered = globalShortcut.register('Command+Shift+O', () => {
       // Apply the change
       mainWindow.setIgnoreMouseEvents(newState)
       mainWindow.webContents.send('toggle-click-through', newState)
-      
-      // Show notification
-      const status = newState ? 'ON - Window won\'t block clicks' : 'OFF - Window is interactive'
-      mainWindow.webContents.send('show-notification', `Click-through: ${status}`)
     }
   })
   
@@ -1957,7 +599,7 @@ function createMenu() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 425,
+    width: 500,
     height: 600,
     
     frame: false,
@@ -1968,7 +610,7 @@ function createWindow() {
     titleBarStyle: 'hiddenInset', // Add this line - enables custom titlebar
     
     resizable: true,
-    minWidth: 425,
+    minWidth: 500,
     minHeight: 400,
     
     roundedCorners: true,
@@ -2045,28 +687,42 @@ app.on('will-quit', () => {
 app.on('window-all-closed', () => {
   app.quit()
 })
+
 ```
 
-### renderer.js
+### preload.js - Secure IPC Bridge
+```javascript
+const { contextBridge, ipcRenderer } = require('electron')
+
+contextBridge.exposeInMainWorld('api', {
+  saveNotes: (notes) => ipcRenderer.send('save-notes', notes),
+  loadNotes: () => ipcRenderer.invoke('load-notes'),
+
+  togglePrivacy: () => ipcRenderer.invoke('toggle-privacy'),
+  onPrivacyChanged: (cb) => ipcRenderer.on('privacy-changed', cb),
+  
+  // Menu commands
+  onFontSizeChange: (callback) => ipcRenderer.on('change-font-size', callback),
+  onOpacityChange: (callback) => ipcRenderer.on('change-opacity', callback),
+  // Click-through
+  onToggleClickThrough: (callback) => ipcRenderer.on('toggle-click-through', callback),
+  
+  // Add import/export handlers
+  onExportNotes: (callback) => ipcRenderer.on('export-notes', callback),
+  onImportNotes: (callback) => ipcRenderer.on('import-notes', callback),
+  onExportBackup: (callback) => ipcRenderer.on('export-backup', callback),
+  onImportBackup: (callback) => ipcRenderer.on('import-backup', callback)
+})
+
+```
+
+### renderer.js - Renderer Logic
 ```javascript
 // This runs in your web page
 let saveTimeout
-let notificationTimeout
 let currentFontSize = 18  // Default font size
 let currentOpacity = 1.0  // Default opacity
-
-// Function to show temporary notifications
-// function showNotification(message) {
-//   const notification = document.getElementById('notification')
-//   notification.textContent = message
-//   notification.style.display = 'block'
-
-//   clearTimeout(notificationTimeout)
-
-//   notificationTimeout = setTimeout(() => {
-//     notification.style.display = 'none'
-//   }, 1500)
-// }
+let toolbarVisible = true
 
 
 
@@ -2204,7 +860,6 @@ function updateToolbarStates() {
   numberBtn.classList.toggle('active', document.queryCommandState('insertOrderedList'))
 }
 function setFontSize(size) {
-  console.log('setFontSize called with:', size)
   const editor = document.getElementById('notes')
   editor.focus()
   
@@ -2218,9 +873,7 @@ function setFontSize(size) {
   else if (size <= 32) commandSize = 6
   else commandSize = 7
   
-  console.log('Using execCommand size:', commandSize)
-  const result = document.execCommand('fontSize', false, commandSize)
-  console.log('execCommand result:', result)
+  document.execCommand('fontSize', false, commandSize)
 }
 
 // Function to update opacity
@@ -2274,9 +927,13 @@ function updateOpacity(value) {
 window.addEventListener('DOMContentLoaded', async () => {
   const editor = document.getElementById('notes')
   const opacitySlider = document.getElementById('opacity-slider')
+  const toolbarWrapper = document.getElementById('toolbar-wrapper')
+  const toolbarToggle = document.getElementById('toolbar-toggle')
 
   // Initialize opacity to ensure proper setup
   updateOpacity(1.0)
+  // Initialize slider background
+document.getElementById('opacity-slider').style.background = `linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) 100%, var(--bg-tertiary) 100%, var(--bg-tertiary) 100%)`
 
   // Load saved notes
   const { notes, privacy } = await window.api.loadNotes()
@@ -2316,31 +973,26 @@ window.addEventListener('DOMContentLoaded', async () => {
       case 'b':
         e.preventDefault()
         insertTextFormat('bold')
-        showNotification('Bold: Cmd+B')
         break
-        
+
       case 'i':
         e.preventDefault()
         insertTextFormat('italic')
-        showNotification('Italic: Cmd+I')
         break
-        
+
       case 'u':
         e.preventDefault()
         insertTextFormat('underline')
-        showNotification('Underline: Cmd+U')
         break
-        
+
       case 'l':
         e.preventDefault()
         insertListItem('bullet')
-        showNotification('Bullet List: Cmd+L')
         break
-        
+
       case 'd':
         e.preventDefault()
         insertListItem('number')
-        showNotification('Numbered List: Cmd+D')
         break
     }
   })
@@ -2348,40 +1000,46 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Opacity slider
   opacitySlider.addEventListener('input', (e) => {
     const value = e.target.value / 100
+    const percentage = e.target.value
+    
+    // Update slider background with gradient
+    e.target.style.background = `linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) ${percentage}%, var(--bg-tertiary) ${percentage}%, var(--bg-tertiary) 100%)`
+    
     updateOpacity(value)
   })
 
-  // Font size buttons
-  document.getElementById('font-decrease').addEventListener('click', () => {
-    updateFontSize('decrease')
-    showNotification('Font size decreased')
-  })
 
-  document.getElementById('font-reset').addEventListener('click', () => {
-    updateFontSize('reset')
-    showNotification('Font size reset')
-  })
-
-  document.getElementById('font-increase').addEventListener('click', () => {
-    updateFontSize('increase')
-    showNotification('Font size increased')
-  })
 
   // Font size dropdown
- // Debug: Check if dropdown exists
- const dropdown = document.getElementById('font-size-select')
- console.log('Font size dropdown element:', dropdown)
- 
- if (dropdown) {
-   // Font size dropdown
-   dropdown.addEventListener('change', (e) => {
-     console.log('Dropdown changed to:', e.target.value)
-     const size = e.target.value
-     setFontSize(size)
-   })
- } else {
-   console.log('ERROR: font-size-select element not found!')
- }
+  const dropdown = document.getElementById('font-size-select')
+
+  if (dropdown) {
+    dropdown.addEventListener('change', (e) => {
+      const size = e.target.value
+      setFontSize(size)
+    })
+  }
+
+  if (toolbarToggle && toolbarWrapper) {
+    const updateToolbarToggleState = () => {
+      toolbarWrapper.classList.toggle('toolbar-hidden', !toolbarVisible)
+
+      const label = toolbarToggle.querySelector('.toggle-label')
+      if (label) {
+        label.textContent = toolbarVisible ? 'Hide toolbar' : 'Show toolbar'
+      }
+
+      toolbarToggle.setAttribute('aria-expanded', toolbarVisible ? 'true' : 'false')
+      toolbarToggle.setAttribute('aria-label', toolbarVisible ? 'Hide toolbar' : 'Show toolbar')
+    }
+
+    toolbarToggle.addEventListener('click', () => {
+      toolbarVisible = !toolbarVisible
+      updateToolbarToggleState()
+    })
+
+    updateToolbarToggleState()
+  }
 
   // File input for imports (hidden, triggered programmatically)
   const fileInput = document.createElement('input')
@@ -2403,17 +1061,14 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (data.notes) {
           editor.innerHTML = data.notes
           await window.api.saveNotes(data.notes)
-          showNotification('Backup imported successfully')
         }
       } else {
         // Import as plain text/markdown
         editor.innerHTML = content
         await window.api.saveNotes(content)
-        showNotification('Notes imported successfully')
       }
     } catch (error) {
       console.error('Import failed:', error)
-      showNotification('Import failed')
     }
 
     // Reset file input
@@ -2431,7 +1086,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     const notes = editor.innerHTML
     const timestamp = new Date().toISOString().split('T')[0]
     downloadFile(notes, `presenter-notes-${timestamp}.md`, 'text/markdown')
-    showNotification('Notes exported')
   })
 
   window.api.onImportNotes(() => {
@@ -2440,7 +1094,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   })
 
   window.api.onExportBackup(async () => {
-    const notes = editor.value
+    const notes = editor.innerHTML
     const timestamp = new Date().toISOString()
     const backup = {
       notes: notes,
@@ -2449,7 +1103,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       opacity: currentOpacity
     }
     downloadFile(JSON.stringify(backup, null, 2), `notes-backup-${timestamp.split('T')[0]}.json`, 'application/json')
-    showNotification('Backup exported')
   })
 
   window.api.onImportBackup(() => {
@@ -2492,11 +1145,6 @@ window.api.onOpacityChange((event, opacity) => {
   updateOpacity(opacity)
 })
 
-// Handle notification display
-window.api.onShowNotification((event, message) => {
-  showNotification(message)
-})
-
 // Handle click-through mode toggle
 window.api.onToggleClickThrough((event, isClickThrough) => {
   const body = document.body
@@ -2520,6 +1168,7 @@ window.api.onToggleClickThrough((event, isClickThrough) => {
 
     editor.placeholder = 'Type your presenter notes here...\n\n• They auto-save as you type\n• Won\'t appear in screenshots\n• Always stays on top\n\nGlobal Shortcuts:\n• Cmd+Shift+N: Toggle window\n• Cmd+Shift+O: Cycle opacity\n• Cmd+Shift+T: Click-through mode\n• Cmd+Shift+Plus/Minus: Font size'
   }
+
 })
 
 // 4-D  listen if menu (or main) toggled privacy
@@ -2531,38 +1180,10 @@ window.api.onPrivacyChanged((e, on) => {
 function updatePrivacyBadge(on) {
   document.querySelector('.privacy-badge').style.display = on ? 'inline-block' : 'none';
 }
+
 ```
 
-### preload.js
-```javascript
-const { contextBridge, ipcRenderer } = require('electron')
-
-contextBridge.exposeInMainWorld('api', {
-  saveNotes: (notes) => ipcRenderer.send('save-notes', notes),
-  loadNotes: () => ipcRenderer.invoke('load-notes'),
-
-  togglePrivacy: () => ipcRenderer.invoke('toggle-privacy'),
-  onPrivacyChanged: (cb) => ipcRenderer.on('privacy-changed', cb),
-  
-  // Menu commands
-  onFontSizeChange: (callback) => ipcRenderer.on('change-font-size', callback),
-  onOpacityChange: (callback) => ipcRenderer.on('change-opacity', callback),
-  
-  // Notifications
-  onShowNotification: (callback) => ipcRenderer.on('show-notification', callback),
-  
-  // Click-through
-  onToggleClickThrough: (callback) => ipcRenderer.on('toggle-click-through', callback),
-  
-  // Add import/export handlers
-  onExportNotes: (callback) => ipcRenderer.on('export-notes', callback),
-  onImportNotes: (callback) => ipcRenderer.on('import-notes', callback),
-  onExportBackup: (callback) => ipcRenderer.on('export-backup', callback),
-  onImportBackup: (callback) => ipcRenderer.on('import-backup', callback)
-})
-```
-
-### index.html
+### index.html - UI Layout & Styling
 ```html
 <!DOCTYPE html>
 <html>
@@ -2581,7 +1202,7 @@ contextBridge.exposeInMainWorld('api', {
       /* Light gray for borders/dividers */
 
       /* Blue accent colors */
-      --blue-primary: #0066cc;
+      --blue-primary: #0066F3;
       /* Main blue for buttons */
       --blue-hover: #0056b3;
       /* Darker blue for hover states */
@@ -2656,8 +1277,10 @@ contextBridge.exposeInMainWorld('api', {
     }
 
     #save-status {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--success);
+      min-width: 60px;
+      text-align: right;
     }
 
     .badge-container {
@@ -2667,7 +1290,7 @@ contextBridge.exposeInMainWorld('api', {
 
     .privacy-badge {
       background-color: #ddffe4;
-      border: 1px solid var(--success);
+      border: none;
       color: #157c2d;
       padding: 2px 4px;
       border-radius: 4px;
@@ -2709,12 +1332,12 @@ contextBridge.exposeInMainWorld('api', {
       position: absolute;
       content: "";
       height: 10px;
-      width: 10px;
+      width: 16px;
       left: 3px;
       bottom: 3px;
       background-color: white;
       transition: .3s;
-      border-radius: 50%
+      border-radius: 8px;
     }
 
     .privacy-switch input:checked+.slider {
@@ -2722,7 +1345,7 @@ contextBridge.exposeInMainWorld('api', {
     }
 
     .privacy-switch input:checked+.slider:before {
-      transform: translateX(20px)
+      transform: translateX(14px)
     }
 
     /* Click-through mode styling */
@@ -2781,87 +1404,179 @@ contextBridge.exposeInMainWorld('api', {
     }
 
     /* Text editing toolbar */
-    .text-toolbar {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 8px;
-      background-color: white;
-      border-bottom: 1px solid var(--bg-tertiary);
-      -webkit-app-region: no-drag;
-    }
-
-    .toolbar-btn {
-      width: 28px;
-      height: 28px;
-      border: none;
-      background-color: transparent;
-      color: var(--text-primary);
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.05s;
-    }
-
-    .toolbar-btn:hover {
-      background-color: var(--bg-secondary);
-      border-color: var(--blue-primary);
-    }
-
-    .toolbar-btn.active {
-      background-color: var(--blue-primary);
-      color: white;
-      border-color: var(--blue-primary);
-    }
-
-    .toolbar-separator {
-      color: var(--text-muted);
-      margin: 0 4px;
-      font-size: 14px;
-    }
-
-    /* Font size dropdown */
-    .font-size-dropdown {
+    .toolbar-wrapper {
       position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 0 4px;
+      gap: 1px;
+      border-bottom: 1px solid #D9DADB;
+      -webkit-app-region: no-drag;
+      background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
     }
-    .font-size-dropdown label {
+
+    .toolbar-wrapper::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
+      z-index: -1;
+    }
+
+    .toolbar-wrapper.toolbar-hidden {
+      justify-content: flex-end;
+      background: transparent;
+      border-bottom: none;
+      padding: 0 16px;
+      gap: 0;
+    }
+
+    .toolbar-wrapper.toolbar-hidden::before {
+      display: none;
+    }
+
+    .toolbar-content {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      flex: 1;
+    }
+
+    .toolbar-wrapper.toolbar-hidden .toolbar-content {
+      display: none;
+    }
+
+    .font-size-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
+      border-radius: 4px;
+      padding: 0 8px;
+      min-height: 32px;
+    }
+
+    .font-size-control label {
       font-size: 13px;
-      padding-right: 8px;
+      color: #111;
+    }
+
+    .font-size-select-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
     }
 
     #font-size-select {
-      height: 28px;
-      padding: 4px 24px 4px 8px;
-      border: 1px solid var(--bg-tertiary);
-      border-radius: 4px;
+      height: 32px;
+      padding: 0 24px 0 6px;
+      border: none;
       background-color: transparent;
-      color: var(--text-primary);
-      font-size: 12px;
+      color: #111;
+      font-size: 13px;
+      line-height: 1.4;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       cursor: pointer;
       outline: none;
       appearance: none;
       -webkit-appearance: none;
       -moz-appearance: none;
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+      min-width: 64px;
+    }
+
+    .font-size-select-wrapper::after {
+      content: '';
+      position: absolute;
+      pointer-events: none;
+      right: 6px;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      transform: translateY(-50%);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M8.51528 7.98474C8.55014 8.01957 8.5778 8.06092 8.59667 8.10645C8.61555 8.15197 8.62526 8.20077 8.62526 8.25005C8.62526 8.29933 8.61555 8.34813 8.59667 8.39365C8.5778 8.43918 8.55014 8.48054 8.51528 8.51536L6.26528 10.7654C6.23045 10.8002 6.18909 10.8279 6.14357 10.8468C6.09804 10.8656 6.04925 10.8753 5.99996 10.8753C5.95068 10.8753 5.90189 10.8656 5.85636 10.8468C5.81084 10.8279 5.76948 10.8002 5.73465 10.7654L3.48465 8.51536C3.41429 8.445 3.37476 8.34956 3.37476 8.25005C3.37476 8.15054 3.41429 8.0551 3.48465 7.98474C3.55502 7.91437 3.65045 7.87484 3.74996 7.87484C3.84948 7.87484 3.94491 7.91437 4.01528 7.98474L5.99996 9.96989L7.98465 7.98474C8.01948 7.94987 8.06084 7.92221 8.10636 7.90334C8.15189 7.88447 8.20068 7.87476 8.24996 7.87476C8.29925 7.87476 8.34804 7.88447 8.39357 7.90334C8.43909 7.92221 8.48045 7.94987 8.51528 7.98474ZM4.01528 4.01536L5.99996 2.03021L7.98465 4.01536C8.05502 4.08573 8.15045 4.12526 8.24996 4.12526C8.34948 4.12526 8.44491 4.08573 8.51528 4.01536C8.58564 3.945 8.62517 3.84956 8.62517 3.75005C8.62517 3.65054 8.58564 3.5551 8.51528 3.48474L6.26528 1.23474C6.23045 1.19987 6.18909 1.17221 6.14357 1.15334C6.09804 1.13447 6.04925 1.12476 5.99996 1.12476C5.95068 1.12476 5.90189 1.13447 5.85636 1.15334C5.81084 1.17221 5.76948 1.19987 5.73465 1.23474L3.48465 3.48474C3.41429 3.5551 3.37476 3.65054 3.37476 3.75005C3.37476 3.84956 3.41429 3.945 3.48465 4.01536C3.55502 4.08573 3.65045 4.12526 3.74996 4.12526C3.84948 4.12526 3.94491 4.08573 4.01528 4.01536Z' fill='black'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
-      background-position: right 6px center;
-      background-size: 12px;
-      min-width: 50px;
+      background-size: 12px 12px;
     }
 
-    #font-size-select:hover {
-      border-color: var(--blue-primary);
-      background-color: var(--bg-secondary);
+    .toolbar-buttons {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      background: #ffffff;
+      padding: 0;
+      border-radius: 4px;
+      overflow: hidden;
     }
 
-    #font-size-select:focus {
-      border-color: var(--blue-primary);
-      box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    .toolbar-btn {
+      width: 34px;
+      height: 32px;
+      border: none;
+      background: #F8F9FA;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      transition: background-color 0.1s ease;
+      background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
+    }
+
+    .toolbar-btn:first-child {
+      border-radius: 4px 0 0 4px;
+    }
+
+    .toolbar-btn:last-child {
+      border-radius: 0 4px 4px 0;
+    }
+
+    .toolbar-btn:focus-visible {
+      outline: 2px solid #0066F3;
+      outline-offset: 1px;
+    }
+
+    .toolbar-btn.active {
+      background: #E6E7E8;
+    }
+    .toolbar-btn:hover {
+      background-color: #EFEFEF;
+    }
+
+    .toolbar-btn svg {
+      pointer-events: none;
+    }
+
+    .toolbar-toggle {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border: none;
+      background: none;
+      color: #0066F3;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0 8px;
+      height: 32px;
+      margin-left: auto;
+    }
+
+    .toolbar-toggle svg {
+      display: block;
+    }
+
+    .toolbar-wrapper.toolbar-hidden .toolbar-toggle {
+      padding: 0;
+      margin-left: 0;
+    }
+
+    .toolbar-wrapper.toolbar-hidden .toolbar-toggle .toggle-icon--hide {
+      display: none;
+    }
+
+    .toolbar-wrapper:not(.toolbar-hidden) .toolbar-toggle .toggle-icon--show {
+      display: none;
     }
 
     #notes-wrapper {
@@ -2924,7 +1639,7 @@ contextBridge.exposeInMainWorld('api', {
     }
 
     .control-label {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-secondary);
       min-width: 50px;
     }
@@ -2940,12 +1655,13 @@ contextBridge.exposeInMainWorld('api', {
 
     .slider::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
-      background: var(--blue-primary);
-      border-radius: 50%;
+      width: 18px;
+      height: 14px;
+      background: white;
+      border-radius: 8px;
+      border: 0.5px solid rgba(0, 0, 0, 0.02);
       cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0, 102, 204, 0.3);
+      box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.08);
       transition: transform 0.2s ease;
     }
 
@@ -2953,70 +1669,38 @@ contextBridge.exposeInMainWorld('api', {
       transform: scale(1.1);
     }
 
+    /* Opacity slider with blue fill */
+    .opacity-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) var(--slider-value, 100%), var(--bg-tertiary) var(--slider-value, 100%), var(--bg-tertiary) 100%);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .opacity-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 14px;
+      background: #ffffff;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s ease;
+    }
+
+    .opacity-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+    }
+
     #opacity-value {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-secondary);
       min-width: 35px;
     }
 
-    /* Font size buttons */
-    .font-controls {
-      display: flex;
-      gap: 4px;
-    }
 
-    .font-btn {
-      width: 24px;
-      height: 24px;
-      border: 1px solid var(--bg-tertiary);
-      color: var(--text-primary);
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-      -webkit-app-region: no-drag;
-    }
-
-    .font-btn:hover {
-      border-color: var(--bg-tertiary);
-    }
-
-    .font-btn:active {
-      background: var(--bg-tertiary);
-    }
-
-    /* Notification toast */
-    #notification {
-      display: none;
-      position: absolute;
-      font-size: 14px;
-      background-color: var(--bg-primary);
-      color: var(--text-primary);
-      border: 1px solid var(--bg-tertiary);
-      border-radius: 8px;
-      padding: 12px 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 1000;
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
 
     /* Custom scrollbar for textarea */
     #notes::-webkit-scrollbar {
@@ -3043,10 +1727,9 @@ contextBridge.exposeInMainWorld('api', {
   <div class="header">
     <div class="header-left">
       <!-- <div class="title">Presenter Notes</div> -->
-      <div id="save-status"></div>
     </div>
     <div class="badge-container">
-      <span class="privacy-badge">PRIVATE MODE ON</span>
+      <span class="privacy-badge">PRIVACY MODE</span>
       <label class="privacy-switch">
         <input type="checkbox" id="privacy-checkbox" checked />
         <span class="slider round" style="height: 16px;"></span>
@@ -3059,31 +1742,80 @@ contextBridge.exposeInMainWorld('api', {
 
 
   <div class="content">
-    <!-- Notification toast -->
-    <div id="notification"></div>
+    <div class="toolbar-wrapper" id="toolbar-wrapper">
+      <div class="toolbar-content">
+        <div class="font-size-control">
+          <label for="font-size-select">Font size</label>
+          <div class="font-size-select-wrapper">
+            <select id="font-size-select" title="Font Size">
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16" selected>16</option>
+              <option value="18">18</option>
+              <option value="20">20</option>
+              <option value="24">24</option>
+              <option value="28">28</option>
+              <option value="32">32</option>
+              <option value="36">36</option>
+            </select>
+          </div>
+        </div>
 
-    <!-- UPDATED: Text editing toolbar with keyboard shortcut hints -->
-    <div class="text-toolbar">
-      <div class="font-size-dropdown">
-        <label for="font-size">Font size</label><select id="font-size-select" title="Font Size">
-          <option value="12">12</option>
-          <option value="14">14</option>
-          <option value="16" selected>16</option>
-          <option value="18">18</option>
-          <option value="20">20</option>
-          <option value="24">24</option>
-          <option value="28">28</option>
-          <option value="32">32</option>
-          <option value="36">36</option>
-        </select>
+        <div class="toolbar-buttons">
+          <button class="toolbar-btn" id="bold-btn" title="Bold (Cmd+B)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M5 9.99992H12.5C13.3841 9.99992 14.2319 10.3511 14.857 10.9762C15.4821 11.6014 15.8333 12.4492 15.8333 13.3333C15.8333 14.2173 15.4821 15.0652 14.857 15.6903C14.2319 16.3154 13.3841 16.6666 12.5 16.6666H5.83333C5.61232 16.6666 5.40036 16.5788 5.24408 16.4225C5.0878 16.2662 5 16.0543 5 15.8333V4.16659C5 3.94557 5.0878 3.73361 5.24408 3.57733C5.40036 3.42105 5.61232 3.33325 5.83333 3.33325H11.6667C12.5507 3.33325 13.3986 3.68444 14.0237 4.30956C14.6488 4.93468 15 5.78253 15 6.66659C15 7.55064 14.6488 8.39849 14.0237 9.02361C13.3986 9.64873 12.5507 9.99992 11.6667 9.99992" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button class="toolbar-btn" id="italic-btn" title="Italic (Cmd+I)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M15.8333 3.33325H8.33325" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M11.6667 16.6667H4.16675" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M12.5 3.33325L7.5 16.6666" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button class="toolbar-btn" id="underline-btn" title="Underline (Cmd+U)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M5 3.33325V8.33325C5 9.65933 5.52678 10.9311 6.46447 11.8688C7.40215 12.8065 8.67392 13.3333 10 13.3333C11.3261 13.3333 12.5979 12.8065 13.5355 11.8688C14.4732 10.9311 15 9.65933 15 8.33325V3.33325" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3.33325 16.6667H16.6666" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button class="toolbar-btn" id="bullet-btn" title="Bullet List (Cmd+L)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M2.5 4.16675H2.50833" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M2.5 10H2.50833" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M2.5 15.8333H2.50833" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M6.66675 4.16675H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M6.66675 10H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M6.66675 15.8333H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button class="toolbar-btn" id="number-btn" title="Numbered List (Cmd+D)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M9.16675 4.16675H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M9.16675 10H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M9.16675 15.8333H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3.33325 3.33325H4.16659V7.49992" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3.33325 7.5H4.99992" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M5.41659 16.6666H2.83325C2.83325 15.8333 4.99992 15.0624 4.99992 13.7499C4.99995 13.4987 4.92426 13.2532 4.78271 13.0456C4.64117 12.838 4.44034 12.6779 4.20643 12.5861C3.97252 12.4943 3.71638 12.4752 3.47143 12.5312C3.22648 12.5872 3.00408 12.7157 2.83325 12.8999" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
       </div>
-      <span class="toolbar-separator">|</span>
-      <button class="toolbar-btn" id="bold-btn" title="Bold (Cmd+B)">B</button>
-      <button class="toolbar-btn" id="italic-btn" title="Italic (Cmd+I)">I</button>
-      <button class="toolbar-btn" id="underline-btn" title="Underline (Cmd+U)">U</button>
-      <span class="toolbar-separator">|</span>
-      <button class="toolbar-btn" id="bullet-btn" title="Bullet List (Cmd+L)">•</button>
-      <button class="toolbar-btn" id="number-btn" title="Numbered List (Cmd+D)">1.</button>
+
+      <button class="toolbar-toggle" id="toolbar-toggle" type="button">
+        <span class="toggle-label">Hide toolbar</span>
+        <span class="toggle-icon toggle-icon--hide" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2.94874 1.89326C2.91032 1.84995 2.86369 1.8147 2.81154 1.78954C2.7594 1.76439 2.70278 1.74984 2.64497 1.74673C2.58716 1.74362 2.5293 1.75201 2.47476 1.77142C2.42022 1.79084 2.37007 1.82088 2.32723 1.85982C2.28438 1.89876 2.24969 1.94581 2.22516 1.99825C2.20064 2.0507 2.18676 2.10749 2.18435 2.16533C2.18193 2.22317 2.19102 2.28092 2.21109 2.33523C2.23115 2.38954 2.2618 2.43932 2.30124 2.48169L3.35343 3.63943C1.36718 4.85841 0.512964 6.73748 0.475229 6.82279C0.450354 6.87874 0.4375 6.93929 0.4375 7.00052C0.4375 7.06175 0.450354 7.12231 0.475229 7.17826C0.49437 7.22146 0.957573 8.24849 1.98734 9.27826C3.35945 10.6498 5.09249 11.375 6.99999 11.375C7.98033 11.3806 8.95076 11.1787 9.84757 10.7827L11.0507 12.1067C11.0891 12.15 11.1358 12.1853 11.1879 12.2104C11.24 12.2356 11.2967 12.2501 11.3545 12.2532C11.4123 12.2563 11.4701 12.2479 11.5247 12.2285C11.5792 12.2091 11.6294 12.1791 11.6722 12.1401C11.7151 12.1012 11.7498 12.0541 11.7743 12.0017C11.7988 11.9493 11.8127 11.8925 11.8151 11.8346C11.8175 11.7768 11.8084 11.719 11.7884 11.6647C11.7683 11.6104 11.7376 11.5606 11.6982 11.5183L2.94874 1.89326ZM5.5371 6.04076L7.81593 8.54818C7.47276 8.72871 7.07936 8.79016 6.69748 8.72287C6.31561 8.65558 5.96689 8.46337 5.7061 8.17642C5.44531 7.88946 5.2872 7.52402 5.25661 7.13747C5.22603 6.75092 5.32469 6.36516 5.5371 6.04076ZM6.99999 10.5C5.31671 10.5 3.84617 9.88802 2.62882 8.68162C2.12915 8.18504 1.70418 7.6186 1.36718 6.99998C1.62367 6.51927 2.44234 5.17396 3.95663 4.29951L4.94101 5.37959C4.55991 5.86767 4.36364 6.47478 4.38688 7.09359C4.41012 7.71239 4.65138 8.30306 5.06801 8.76119C5.48465 9.21932 6.04983 9.51541 6.66366 9.59712C7.27749 9.67882 7.90045 9.5409 8.42242 9.20771L9.22796 10.0936C8.51702 10.3664 7.76145 10.5042 6.99999 10.5ZM7.32812 5.28115C7.21412 5.25939 7.11343 5.19324 7.0482 5.09724C6.98297 5.00125 6.95855 4.88327 6.98031 4.76927C7.00206 4.65527 7.06822 4.55458 7.16421 4.48935C7.26021 4.42413 7.37818 4.3997 7.49218 4.42146C8.04978 4.52956 8.55749 4.81502 8.93959 5.23526C9.32169 5.6555 9.5577 6.188 9.61242 6.75334C9.62322 6.86886 9.58769 6.98394 9.51364 7.07327C9.43959 7.1626 9.3331 7.21885 9.21757 7.22966C9.20391 7.23047 9.19022 7.23047 9.17656 7.22966C9.06721 7.23013 8.96165 7.18963 8.88067 7.11615C8.79969 7.04266 8.74917 6.94151 8.73906 6.83263C8.70223 6.4566 8.54503 6.10249 8.29082 5.82296C8.03661 5.54343 7.69898 5.35341 7.32812 5.28115ZM13.5231 7.17826C13.5002 7.22966 12.9462 8.4563 11.6987 9.57357C11.6561 9.61296 11.6061 9.64348 11.5516 9.66334C11.497 9.68321 11.4391 9.69203 11.3811 9.68928C11.3231 9.68654 11.2663 9.67228 11.2139 9.64735C11.1615 9.62242 11.1145 9.58731 11.0758 9.54407C11.0371 9.50082 11.0074 9.45031 10.9884 9.39547C10.9694 9.34062 10.9615 9.28255 10.9652 9.22463C10.9688 9.16671 10.984 9.11009 11.0098 9.05808C11.0355 9.00607 11.0714 8.95971 11.1152 8.92169C11.7272 8.37188 12.2413 7.72205 12.6355 6.99998C12.2978 6.38079 11.8719 5.81396 11.3712 5.31724C10.1538 4.11193 8.68328 3.49998 6.99999 3.49998C6.64532 3.49954 6.29121 3.52826 5.94124 3.58584C5.88433 3.5959 5.82599 3.59459 5.76959 3.58198C5.71319 3.56937 5.65984 3.5457 5.61264 3.51236C5.56543 3.47901 5.5253 3.43665 5.49456 3.3877C5.46383 3.33876 5.44309 3.28421 5.43355 3.22721C5.42402 3.17021 5.42587 3.11188 5.439 3.0556C5.45214 2.99932 5.47629 2.94619 5.51007 2.8993C5.54385 2.85241 5.58659 2.81267 5.63582 2.78239C5.68504 2.7521 5.73978 2.73187 5.79687 2.72287C6.19454 2.65721 6.59694 2.62446 6.99999 2.62498C8.90749 2.62498 10.6405 3.35013 12.0127 4.72224C13.0424 5.75201 13.5056 6.77959 13.5248 6.82279C13.5496 6.87874 13.5625 6.93929 13.5625 7.00052C13.5625 7.06175 13.5496 7.12231 13.5248 7.17826H13.5231Z" fill="#0066F3" />
+        </span>
+        <span class="toggle-icon toggle-icon--show" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 3.25C3.79167 3.25 1.75 6.06042 1.75 7C1.75 7.93958 3.79167 10.75 7 10.75C10.2083 10.75 12.25 7.93958 12.25 7C12.25 6.06042 10.2083 3.25 7 3.25Z" stroke="#0066F3" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M7 8.75C7.9665 8.75 8.75 7.9665 8.75 7C8.75 6.0335 7.9665 5.25 7 5.25C6.0335 5.25 5.25 6.0335 5.25 7C5.25 7.9665 6.0335 8.75 7 8.75Z" stroke="#0066F3" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+      </button>
     </div>
 
     <div id="notes-wrapper">
@@ -3094,65 +1826,16 @@ contextBridge.exposeInMainWorld('api', {
   <!-- Controls bar -->
   <div class="controls">
     <div class="control-group">
-      <span class="control-label">Opacity:</span>
-      <input type="range" class="slider" id="opacity-slider" min="10" max="100" value="100">
+      <span class="control-label">Opacity</span>
+      <input type="range" class="opacity-slider" id="opacity-slider" min="10" max="100" value="100">
       <span id="opacity-value">100%</span>
     </div>
-
-    <div class="control-group">
-      <span class="control-label">Font:</span>
-      <div class="font-controls">
-        <button class="font-btn" id="font-decrease">−</button>
-        <button class="font-btn" id="font-reset">R</button>
-        <button class="font-btn" id="font-increase">+</button>
-      </div>
-    </div>
+    <div id="save-status"></div>
   </div>
 
   <script src="renderer.js"></script>
 </body>
 
 </html>
-```
 
-### create_temp_icon.sh
-```bash
-#!/usr/bin/env bash
-
-set -euo pipefail
-
-# Create a quick temporary macOS-style icon using sips
-# Requirements: sips (preinstalled on macOS)
-
-OUT_PNG="build/icon.png"
-OUT_ICNS="build/icon.icns"
-
-mkdir -p build
-
-# Create a simple 1024x1024 blue square as placeholder
-sips -s format png --resampleWidth 1024 --padToHeightWidth 1024 1024 \
-    --padColor FFFFFF /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarFavoritesIcon.icns \
-    --out "$OUT_PNG" >/dev/null 2>&1 || true
-
-# If you have an SVG (temp_icon.svg) you can rasterize with sips (macOS 14+ supports SVG)
-if command -v sips >/dev/null 2>&1 && [[ -f "temp_icon.svg" ]]; then
-  sips -s format png temp_icon.svg --resampleWidth 1024 --out "$OUT_PNG"
-fi
-
-# Convert to .icns using iconutil
-TMPICONSET=$(mktemp -d)
-for SZ in 16 32 64 128 256 512 1024; do
-  sips -z $SZ $SZ "$OUT_PNG" --out "$TMPICONSET/icon_${SZ}x${SZ}.png" >/dev/null
-done
-
-mkdir -p "$TMPICONSET/AppIcon.iconset"
-cp -f "$TMPICONSET"/*.png "$TMPICONSET/AppIcon.iconset/" || true
-
-if command -v iconutil >/dev/null 2>&1; then
-  iconutil -c icns "$TMPICONSET/AppIcon.iconset" -o "$OUT_ICNS"
-else
-  echo "iconutil not found; skipping .icns generation"
-fi
-
-echo "Icons written to $OUT_PNG and $OUT_ICNS"
 ```

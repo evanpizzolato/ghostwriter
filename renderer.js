@@ -3,6 +3,8 @@ let saveTimeout
 let currentFontSize = 18  // Default font size
 let currentOpacity = 1.0  // Default opacity
 let toolbarVisible = true
+let sidebarCollapsed = true
+let sidebarToggleShortcutHint = '⌥⌘S'
 
 
 
@@ -163,9 +165,11 @@ function updateOpacity(value) {
   // For transparent window effect, we need to change the background alpha values
   const header = document.querySelector('.header')
   const controls = document.querySelector('.controls')
+  const appLayout = document.querySelector('.app-layout')
   const content = document.querySelector('.content')
   const notesWrapper = document.getElementById('notes-wrapper')
   const editor = document.getElementById('notes')
+  const mainColumn = document.querySelector('.main-column')
 
   // Calculate the actual opacity for the notes area (minimum 40%)
   const notesOpacity = Math.max(value, 0.4)
@@ -177,8 +181,16 @@ function updateOpacity(value) {
   header.style.backgroundColor = '#f8f9fa'
   controls.style.backgroundColor = '#ffffff'
 
+  if (appLayout) {
+    appLayout.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+  }
+
   // Content area with variable transparency
   content.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+
+  if (mainColumn) {
+    mainColumn.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+  }
 
   // Notes wrapper with minimum 40% opacity
   notesWrapper.style.backgroundColor = `rgba(255, 255, 255, ${notesOpacity * 0.95})`
@@ -204,89 +216,167 @@ function updateOpacity(value) {
   document.getElementById('opacity-slider').value = percentage
 }
 
+function applySidebarState(collapsed, { persist = false, suppressAnimation = false } = {}) {
+  const body = document.body
+  const toggle = document.getElementById('sidebar-toggle')
+
+  if (!body) return
+
+  const isCollapsed = !!collapsed
+
+  if (suppressAnimation) {
+    body.classList.add('sidebar-initializing')
+  }
+
+  sidebarCollapsed = isCollapsed
+  body.classList.toggle('sidebar-collapsed', isCollapsed)
+
+  if (toggle) {
+    toggle.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true')
+    toggle.setAttribute('aria-label', isCollapsed ? 'Show sidebar' : 'Hide sidebar')
+    const hint = sidebarToggleShortcutHint
+    toggle.title = isCollapsed ? `Show sidebar (${hint})` : `Hide sidebar (${hint})`
+  }
+
+  if (persist && window.api.saveSidebarState) {
+    window.api.saveSidebarState(isCollapsed)
+  }
+
+  if (suppressAnimation) {
+    requestAnimationFrame(() => {
+      body.classList.remove('sidebar-initializing')
+    })
+  }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   const editor = document.getElementById('notes')
   const opacitySlider = document.getElementById('opacity-slider')
   const toolbarWrapper = document.getElementById('toolbar-wrapper')
   const toolbarToggle = document.getElementById('toolbar-toggle')
+  const sidebarToggle = document.getElementById('sidebar-toggle')
+  const privacyCheckbox = document.getElementById('privacy-checkbox')
+  const saveStatus = document.getElementById('save-status')
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+
+  sidebarToggleShortcutHint = isMac ? '⌥⌘S' : 'Ctrl+Alt+S'
 
   // Initialize opacity to ensure proper setup
   updateOpacity(1.0)
-  // Initialize slider background
-document.getElementById('opacity-slider').style.background = `linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) 100%, var(--bg-tertiary) 100%, var(--bg-tertiary) 100%)`
 
-  // Load saved notes
-  const { notes, privacy } = await window.api.loadNotes()
-  editor.innerHTML = notes;
-  document.getElementById('privacy-checkbox').checked = privacy;
-  updatePrivacyBadge(privacy);
+  if (opacitySlider) {
+    opacitySlider.style.background = 'linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) 100%, var(--bg-tertiary) 100%, var(--bg-tertiary) 100%)'
+  }
 
-  // Auto-save as user types (with debounce)
-  editor.addEventListener('input', (e) => {
-    document.getElementById('save-status').textContent = 'Saving...'
-    clearTimeout(saveTimeout)
+  const loadedState = await window.api.loadNotes()
+  const { notes, privacy, sidebarCollapsed: savedSidebarCollapsed } = loadedState
 
-    saveTimeout = setTimeout(() => {
-      window.api.saveNotes({ notes: e.target.innerHTML, privacy: document.getElementById('privacy-checkbox').checked })
-      document.getElementById('save-status').textContent = 'Saved'
+  if (editor) {
+    editor.innerHTML = notes
+  }
 
-      setTimeout(() => {
-        document.getElementById('save-status').textContent = ''
-      }, 2000)
-    }, 500)
+  if (privacyCheckbox) {
+    privacyCheckbox.checked = privacy
+  }
+
+  const initialSidebarCollapsed = typeof savedSidebarCollapsed === 'boolean' ? savedSidebarCollapsed : true
+  applySidebarState(initialSidebarCollapsed, { suppressAnimation: true })
+  updatePrivacyBadge(privacy)
+
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', () => {
+      applySidebarState(!sidebarCollapsed, { persist: true })
+    })
+  }
+
+  window.addEventListener('keydown', (event) => {
+    const primaryModifier = isMac ? event.metaKey : event.ctrlKey
+
+    if (!primaryModifier || !event.altKey) return
+    if (event.key.toLowerCase() !== 's') return
+
+    event.preventDefault()
+    applySidebarState(!sidebarCollapsed, { persist: true })
   })
 
-  // NEW: Update toolbar states when cursor moves or text selection changes
-  editor.addEventListener('selectionchange', updateToolbarStates)
-  editor.addEventListener('keyup', updateToolbarStates)
-  editor.addEventListener('mouseup', updateToolbarStates)
+  if (editor) {
+    editor.addEventListener('input', (e) => {
+      if (saveStatus) {
+        saveStatus.textContent = 'Saving...'
+      }
+      clearTimeout(saveTimeout)
 
-  // NEW: Keyboard shortcuts for text formatting
-  editor.addEventListener('keydown', (e) => {
-    // Check for Cmd/Ctrl key combinations
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
-    const cmdKey = isMac ? e.metaKey : e.ctrlKey
-    
-    if (!cmdKey) return
-    
-    switch(e.key.toLowerCase()) {
-      case 'b':
-        e.preventDefault()
-        insertTextFormat('bold')
-        break
+      saveTimeout = setTimeout(() => {
+        window.api.saveNotes({
+          notes: e.target.innerHTML,
+          privacy: privacyCheckbox ? privacyCheckbox.checked : true,
+          sidebarCollapsed
+        })
 
-      case 'i':
-        e.preventDefault()
-        insertTextFormat('italic')
-        break
+        if (saveStatus) {
+          saveStatus.textContent = 'Saved'
 
-      case 'u':
-        e.preventDefault()
-        insertTextFormat('underline')
-        break
+          setTimeout(() => {
+            saveStatus.textContent = ''
+          }, 2000)
+        }
+      }, 500)
+    })
+  }
 
-      case 'l':
-        e.preventDefault()
-        insertListItem('bullet')
-        break
+  if (editor) {
+    // NEW: Update toolbar states when cursor moves or text selection changes
+    editor.addEventListener('selectionchange', updateToolbarStates)
+    editor.addEventListener('keyup', updateToolbarStates)
+    editor.addEventListener('mouseup', updateToolbarStates)
 
-      case 'd':
-        e.preventDefault()
-        insertListItem('number')
-        break
-    }
-  })
+    // NEW: Keyboard shortcuts for text formatting
+    editor.addEventListener('keydown', (e) => {
+      const cmdKey = isMac ? e.metaKey : e.ctrlKey
 
-  // Opacity slider
-  opacitySlider.addEventListener('input', (e) => {
-    const value = e.target.value / 100
-    const percentage = e.target.value
-    
-    // Update slider background with gradient
-    e.target.style.background = `linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) ${percentage}%, var(--bg-tertiary) ${percentage}%, var(--bg-tertiary) 100%)`
-    
-    updateOpacity(value)
-  })
+      if (!cmdKey) return
+
+      switch (e.key.toLowerCase()) {
+        case 'b':
+          e.preventDefault()
+          insertTextFormat('bold')
+          break
+
+        case 'i':
+          e.preventDefault()
+          insertTextFormat('italic')
+          break
+
+        case 'u':
+          e.preventDefault()
+          insertTextFormat('underline')
+          break
+
+        case 'l':
+          e.preventDefault()
+          insertListItem('bullet')
+          break
+
+        case 'd':
+          e.preventDefault()
+          insertListItem('number')
+          break
+      }
+    })
+  }
+
+  if (opacitySlider) {
+    // Opacity slider
+    opacitySlider.addEventListener('input', (e) => {
+      const value = e.target.value / 100
+      const percentage = e.target.value
+
+      // Update slider background with gradient
+      e.target.style.background = `linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) ${percentage}%, var(--bg-tertiary) ${percentage}%, var(--bg-tertiary) 100%)`
+
+      updateOpacity(value)
+    })
+  }
 
 
 
@@ -339,13 +429,25 @@ document.getElementById('opacity-slider').style.background = `linear-gradient(to
         // Import JSON backup
         const data = JSON.parse(content)
         if (data.notes) {
-          editor.innerHTML = data.notes
-          await window.api.saveNotes(data.notes)
+          if (editor) {
+            editor.innerHTML = data.notes
+          }
+          await window.api.saveNotes({
+            notes: data.notes,
+            privacy: privacyCheckbox ? privacyCheckbox.checked : true,
+            sidebarCollapsed
+          })
         }
       } else {
         // Import as plain text/markdown
-        editor.innerHTML = content
-        await window.api.saveNotes(content)
+        if (editor) {
+          editor.innerHTML = content
+        }
+        await window.api.saveNotes({
+          notes: content,
+          privacy: privacyCheckbox ? privacyCheckbox.checked : true,
+          sidebarCollapsed
+        })
       }
     } catch (error) {
       console.error('Import failed:', error)
@@ -355,11 +457,13 @@ document.getElementById('opacity-slider').style.background = `linear-gradient(to
     fileInput.value = ''
   })
 
-  document.getElementById('privacy-checkbox').addEventListener('change', async (e) => {
-    const on = e.target.checked;
-    await window.api.togglePrivacy();   // main process flips window
-    updatePrivacyBadge(on);
-  })
+  if (privacyCheckbox) {
+    privacyCheckbox.addEventListener('change', async (e) => {
+      const on = e.target.checked
+      await window.api.togglePrivacy()   // main process flips window
+      updatePrivacyBadge(on)
+    })
+  }
 
   // Export handlers
   window.api.onExportNotes(async () => {

@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('api', {
   saveNotes: (notes) => ipcRenderer.send('save-notes', notes),
   loadNotes: () => ipcRenderer.invoke('load-notes'),
+  saveSidebarState: (collapsed) => ipcRenderer.send('save-sidebar-state', collapsed),
 
   togglePrivacy: () => ipcRenderer.invoke('toggle-privacy'),
   onPrivacyChanged: (cb) => ipcRenderer.on('privacy-changed', cb),

@@ -81,6 +81,102 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      margin-left: 56px;
+    }
+
+    .sidebar-toggle {
+      -webkit-app-region: no-drag;
+      width: 30px;
+      height: 30px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .sidebar-toggle:hover {
+      background-color: rgba(0, 0, 0, 0.08);
+    }
+
+    .sidebar-toggle:focus-visible {
+      outline: 2px solid var(--blue-primary);
+      outline-offset: 2px;
+    }
+
+    .sidebar-toggle-icon {
+      transition: transform 0.24s ease;
+    }
+
+    body:not(.sidebar-collapsed) .sidebar-toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .app-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      background-color: var(--bg-secondary);
+    }
+
+    .sidebar {
+      width: 200px;
+      min-width: 200px;
+      max-width: 200px;
+      background: linear-gradient(180deg, #F6F7F9 0%, #EDEFF3 100%);
+      border-right: 1px solid rgba(0, 0, 0, 0.05);
+      box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.03);
+      transition: width 0.24s ease, min-width 0.24s ease, opacity 0.24s ease;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sidebar::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 100%);
+      opacity: 0.6;
+    }
+
+    .sidebar-content {
+      position: relative;
+      flex: 1;
+      padding: 16px 20px;
+    }
+
+    .main-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background-color: rgba(255, 255, 255, 0.95);
+      transition: background-color 0.2s ease;
+    }
+
+    body.sidebar-collapsed .sidebar {
+      width: 0;
+      min-width: 0;
+      opacity: 0;
+      pointer-events: none;
+      border-right-color: transparent;
+      box-shadow: none;
+    }
+
+    body.sidebar-collapsed .sidebar::after {
+      opacity: 0;
+    }
+
+    body.sidebar-initializing .sidebar,
+    body.sidebar-initializing .sidebar-toggle-icon,
+    body.sidebar-initializing .sidebar::after {
+      transition: none !important;
     }
 
     .title {
@@ -536,10 +632,18 @@
   </style>
 </head>
 
-<body>
+<body class="sidebar-collapsed">
   <div class="header">
     <div class="header-left">
-      <!-- <div class="title">Presenter Notes</div> -->
+      <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Show sidebar" aria-expanded="false"
+        aria-controls="app-sidebar">
+        <svg class="sidebar-toggle-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"
+          fill="none" aria-hidden="true">
+          <line x1="4.25" y1="4" x2="4.25" y2="14" stroke="#3A3A3C" stroke-width="1.5" stroke-linecap="round" />
+          <path d="M10.25 5.75L13.5 9L10.25 12.25" stroke="#3A3A3C" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </button>
     </div>
     <div class="badge-container">
       <span class="privacy-badge">PRIVACY MODE</span>
@@ -554,10 +658,16 @@
 
 
 
-  <div class="content">
-    <div class="toolbar-wrapper" id="toolbar-wrapper">
-      <div class="toolbar-content">
-        <div class="font-size-control">
+  <div class="app-layout">
+    <aside id="app-sidebar" class="sidebar" role="complementary" aria-label="Sidebar">
+      <div class="sidebar-content" aria-hidden="true"></div>
+    </aside>
+
+    <div class="main-column">
+      <div class="content">
+        <div class="toolbar-wrapper" id="toolbar-wrapper">
+          <div class="toolbar-content">
+            <div class="font-size-control">
           <label for="font-size-select">Font size</label>
           <div class="font-size-select-wrapper">
             <select id="font-size-select" title="Font Size">
@@ -613,12 +723,12 @@
               <path d="M5.41659 16.6666H2.83325C2.83325 15.8333 4.99992 15.0624 4.99992 13.7499C4.99995 13.4987 4.92426 13.2532 4.78271 13.0456C4.64117 12.838 4.44034 12.6779 4.20643 12.5861C3.97252 12.4943 3.71638 12.4752 3.47143 12.5312C3.22648 12.5872 3.00408 12.7157 2.83325 12.8999" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      <button class="toolbar-toggle" id="toolbar-toggle" type="button">
-        <span class="toggle-label">Hide toolbar</span>
-        <span class="toggle-icon toggle-icon--hide" aria-hidden="true">
+          <button class="toolbar-toggle" id="toolbar-toggle" type="button">
+            <span class="toggle-label">Hide toolbar</span>
+            <span class="toggle-icon toggle-icon--hide" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M2.94874 1.89326C2.91032 1.84995 2.86369 1.8147 2.81154 1.78954C2.7594 1.76439 2.70278 1.74984 2.64497 1.74673C2.58716 1.74362 2.5293 1.75201 2.47476 1.77142C2.42022 1.79084 2.37007 1.82088 2.32723 1.85982C2.28438 1.89876 2.24969 1.94581 2.22516 1.99825C2.20064 2.0507 2.18676 2.10749 2.18435 2.16533C2.18193 2.22317 2.19102 2.28092 2.21109 2.33523C2.23115 2.38954 2.2618 2.43932 2.30124 2.48169L3.35343 3.63943C1.36718 4.85841 0.512964 6.73748 0.475229 6.82279C0.450354 6.87874 0.4375 6.93929 0.4375 7.00052C0.4375 7.06175 0.450354 7.12231 0.475229 7.17826C0.49437 7.22146 0.957573 8.24849 1.98734 9.27826C3.35945 10.6498 5.09249 11.375 6.99999 11.375C7.98033 11.3806 8.95076 11.1787 9.84757 10.7827L11.0507 12.1067C11.0891 12.15 11.1358 12.1853 11.1879 12.2104C11.24 12.2356 11.2967 12.2501 11.3545 12.2532C11.4123 12.2563 11.4701 12.2479 11.5247 12.2285C11.5792 12.2091 11.6294 12.1791 11.6722 12.1401C11.7151 12.1012 11.7498 12.0541 11.7743 12.0017C11.7988 11.9493 11.8127 11.8925 11.8151 11.8346C11.8175 11.7768 11.8084 11.719 11.7884 11.6647C11.7683 11.6104 11.7376 11.5606 11.6982 11.5183L2.94874 1.89326ZM5.5371 6.04076L7.81593 8.54818C7.47276 8.72871 7.07936 8.79016 6.69748 8.72287C6.31561 8.65558 5.96689 8.46337 5.7061 8.17642C5.44531 7.88946 5.2872 7.52402 5.25661 7.13747C5.22603 6.75092 5.32469 6.36516 5.5371 6.04076ZM6.99999 10.5C5.31671 10.5 3.84617 9.88802 2.62882 8.68162C2.12915 8.18504 1.70418 7.6186 1.36718 6.99998C1.62367 6.51927 2.44234 5.17396 3.95663 4.29951L4.94101 5.37959C4.55991 5.86767 4.36364 6.47478 4.38688 7.09359C4.41012 7.71239 4.65138 8.30306 5.06801 8.76119C5.48465 9.21932 6.04983 9.51541 6.66366 9.59712C7.27749 9.67882 7.90045 9.5409 8.42242 9.20771L9.22796 10.0936C8.51702 10.3664 7.76145 10.5042 6.99999 10.5ZM7.32812 5.28115C7.21412 5.25939 7.11343 5.19324 7.0482 5.09724C6.98297 5.00125 6.95855 4.88327 6.98031 4.76927C7.00206 4.65527 7.06822 4.55458 7.16421 4.48935C7.26021 4.42413 7.37818 4.3997 7.49218 4.42146C8.04978 4.52956 8.55749 4.81502 8.93959 5.23526C9.32169 5.6555 9.5577 6.188 9.61242 6.75334C9.62322 6.86886 9.58769 6.98394 9.51364 7.07327C9.43959 7.1626 9.3331 7.21885 9.21757 7.22966C9.20391 7.23047 9.19022 7.23047 9.17656 7.22966C9.06721 7.23013 8.96165 7.18963 8.88067 7.11615C8.79969 7.04266 8.74917 6.94151 8.73906 6.83263C8.70223 6.4566 8.54503 6.10249 8.29082 5.82296C8.03661 5.54343 7.69898 5.35341 7.32812 5.28115ZM13.5231 7.17826C13.5002 7.22966 12.9462 8.4563 11.6987 9.57357C11.6561 9.61296 11.6061 9.64348 11.5516 9.66334C11.497 9.68321 11.4391 9.69203 11.3811 9.68928C11.3231 9.68654 11.2663 9.67228 11.2139 9.64735C11.1615 9.62242 11.1145 9.58731 11.0758 9.54407C11.0371 9.50082 11.0074 9.45031 10.9884 9.39547C10.9694 9.34062 10.9615 9.28255 10.9652 9.22463C10.9688 9.16671 10.984 9.11009 11.0098 9.05808C11.0355 9.00607 11.0714 8.95971 11.1152 8.92169C11.7272 8.37188 12.2413 7.72205 12.6355 6.99998C12.2978 6.38079 11.8719 5.81396 11.3712 5.31724C10.1538 4.11193 8.68328 3.49998 6.99999 3.49998C6.64532 3.49954 6.29121 3.52826 5.94124 3.58584C5.88433 3.5959 5.82599 3.59459 5.76959 3.58198C5.71319 3.56937 5.65984 3.5457 5.61264 3.51236C5.56543 3.47901 5.5253 3.43665 5.49456 3.3877C5.46383 3.33876 5.44309 3.28421 5.43355 3.22721C5.42402 3.17021 5.42587 3.11188 5.439 3.0556C5.45214 2.99932 5.47629 2.94619 5.51007 2.8993C5.54385 2.85241 5.58659 2.81267 5.63582 2.78239C5.68504 2.7521 5.73978 2.73187 5.79687 2.72287C6.19454 2.65721 6.59694 2.62446 6.99999 2.62498C8.90749 2.62498 10.6405 3.35013 12.0127 4.72224C13.0424 5.75201 13.5056 6.77959 13.5248 6.82279C13.5496 6.87874 13.5625 6.93929 13.5625 7.00052C13.5625 7.06175 13.5496 7.12231 13.5248 7.17826H13.5231Z" fill="#0066F3" />
         </span>
@@ -628,22 +738,24 @@
             <path d="M7 8.75C7.9665 8.75 8.75 7.9665 8.75 7C8.75 6.0335 7.9665 5.25 7 5.25C6.0335 5.25 5.25 6.0335 5.25 7C5.25 7.9665 6.0335 8.75 7 8.75Z" stroke="#0066F3" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </span>
-      </button>
-    </div>
+          </button>
+        </div>
 
-    <div id="notes-wrapper">
-      <div id="notes" contenteditable="true" spellcheck="true"></div>
-    </div>
-  </div>
+        <div id="notes-wrapper">
+          <div id="notes" contenteditable="true" spellcheck="true"></div>
+        </div>
+      </div>
 
-  <!-- Controls bar -->
-  <div class="controls">
-    <div class="control-group">
-      <span class="control-label">Opacity</span>
-      <input type="range" class="opacity-slider" id="opacity-slider" min="10" max="100" value="100">
-      <span id="opacity-value">100%</span>
+      <!-- Controls bar -->
+      <div class="controls">
+        <div class="control-group">
+          <span class="control-label">Opacity</span>
+          <input type="range" class="opacity-slider" id="opacity-slider" min="10" max="100" value="100">
+          <span id="opacity-value">100%</span>
+        </div>
+        <div id="save-status"></div>
+      </div>
     </div>
-    <div id="save-status"></div>
   </div>
 
   <script src="renderer.js"></script>
