@@ -460,7 +460,7 @@ function createMenu() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 425,
+    width: 500,
     height: 600,
     
     frame: false,
@@ -471,7 +471,7 @@ function createWindow() {
     titleBarStyle: 'hiddenInset', // Add this line - enables custom titlebar
     
     resizable: true,
-    minWidth: 425,
+    minWidth: 500,
     minHeight: 400,
     
     roundedCorners: true,

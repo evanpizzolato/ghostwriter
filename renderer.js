@@ -2,6 +2,7 @@
 let saveTimeout
 let currentFontSize = 18  // Default font size
 let currentOpacity = 1.0  // Default opacity
+let toolbarVisible = true
 
 
 
@@ -139,7 +140,6 @@ function updateToolbarStates() {
   numberBtn.classList.toggle('active', document.queryCommandState('insertOrderedList'))
 }
 function setFontSize(size) {
-  console.log('setFontSize called with:', size)
   const editor = document.getElementById('notes')
   editor.focus()
   
@@ -153,9 +153,7 @@ function setFontSize(size) {
   else if (size <= 32) commandSize = 6
   else commandSize = 7
   
-  console.log('Using execCommand size:', commandSize)
-  const result = document.execCommand('fontSize', false, commandSize)
-  console.log('execCommand result:', result)
+  document.execCommand('fontSize', false, commandSize)
 }
 
 // Function to update opacity
@@ -209,6 +207,8 @@ function updateOpacity(value) {
 window.addEventListener('DOMContentLoaded', async () => {
   const editor = document.getElementById('notes')
   const opacitySlider = document.getElementById('opacity-slider')
+  const toolbarWrapper = document.getElementById('toolbar-wrapper')
+  const toolbarToggle = document.getElementById('toolbar-toggle')
 
   // Initialize opacity to ensure proper setup
   updateOpacity(1.0)
@@ -291,20 +291,35 @@ document.getElementById('opacity-slider').style.background = `linear-gradient(to
 
 
   // Font size dropdown
- // Debug: Check if dropdown exists
- const dropdown = document.getElementById('font-size-select')
- console.log('Font size dropdown element:', dropdown)
- 
- if (dropdown) {
-   // Font size dropdown
-   dropdown.addEventListener('change', (e) => {
-     console.log('Dropdown changed to:', e.target.value)
-     const size = e.target.value
-     setFontSize(size)
-   })
- } else {
-   console.log('ERROR: font-size-select element not found!')
- }
+  const dropdown = document.getElementById('font-size-select')
+
+  if (dropdown) {
+    dropdown.addEventListener('change', (e) => {
+      const size = e.target.value
+      setFontSize(size)
+    })
+  }
+
+  if (toolbarToggle && toolbarWrapper) {
+    const updateToolbarToggleState = () => {
+      toolbarWrapper.classList.toggle('toolbar-hidden', !toolbarVisible)
+
+      const label = toolbarToggle.querySelector('.toggle-label')
+      if (label) {
+        label.textContent = toolbarVisible ? 'Hide toolbar' : 'Show toolbar'
+      }
+
+      toolbarToggle.setAttribute('aria-expanded', toolbarVisible ? 'true' : 'false')
+      toolbarToggle.setAttribute('aria-label', toolbarVisible ? 'Hide toolbar' : 'Show toolbar')
+    }
+
+    toolbarToggle.addEventListener('click', () => {
+      toolbarVisible = !toolbarVisible
+      updateToolbarToggleState()
+    })
+
+    updateToolbarToggleState()
+  }
 
   // File input for imports (hidden, triggered programmatically)
   const fileInput = document.createElement('input')
@@ -433,6 +448,7 @@ window.api.onToggleClickThrough((event, isClickThrough) => {
 
     editor.placeholder = 'Type your presenter notes here...\n\n• They auto-save as you type\n• Won\'t appear in screenshots\n• Always stays on top\n\nGlobal Shortcuts:\n• Cmd+Shift+N: Toggle window\n• Cmd+Shift+O: Cycle opacity\n• Cmd+Shift+T: Click-through mode\n• Cmd+Shift+Plus/Minus: Font size'
   }
+
 })
 
 // 4-D  listen if menu (or main) toggled privacy

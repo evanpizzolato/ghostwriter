@@ -217,88 +217,179 @@
     }
 
     /* Text editing toolbar */
-    .text-toolbar {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 8px;
-      background-color: white;
-      border-bottom: 1px solid var(--bg-tertiary);
-      -webkit-app-region: no-drag;
-    }
-
-    .toolbar-btn {
-      width: 28px;
-      height: 28px;
-      border: none;
-      background-color: transparent;
-      color: var(--text-primary);
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.05s;
-    }
-
-    .toolbar-btn:hover {
-      background-color: var(--bg-secondary);
-      border-color: var(--blue-primary);
-    }
-
-    .toolbar-btn.active {
-      background-color: var(--blue-primary);
-      color: white;
-      border-color: var(--blue-primary);
-    }
-
-    .toolbar-separator {
-      color: var(--text-muted);
-      margin: 0 4px;
-      font-size: 14px;
-    }
-
-    /* Font size dropdown */
-    .font-size-dropdown {
+    .toolbar-wrapper {
       position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 0 4px;
+      gap: 1px;
+      border-bottom: 1px solid #D9DADB;
+      -webkit-app-region: no-drag;
+      background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
     }
 
-    .font-size-dropdown label {
+    .toolbar-wrapper::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
+      z-index: -1;
+    }
+
+    .toolbar-wrapper.toolbar-hidden {
+      justify-content: flex-end;
+      background: transparent;
+      border-bottom: none;
+      padding: 0 16px;
+      gap: 0;
+    }
+
+    .toolbar-wrapper.toolbar-hidden::before {
+      display: none;
+    }
+
+    .toolbar-content {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      flex: 1;
+    }
+
+    .toolbar-wrapper.toolbar-hidden .toolbar-content {
+      display: none;
+    }
+
+    .font-size-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
+      border-radius: 4px;
+      padding: 0 8px;
+      min-height: 32px;
+    }
+
+    .font-size-control label {
       font-size: 13px;
-      padding-right: 8px;
+      color: #111;
+    }
+
+    .font-size-select-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
     }
 
     #font-size-select {
-      height: 28px;
-      padding: 4px 24px 4px 8px;
-      border: 1px solid var(--bg-tertiary);
-      border-radius: 4px;
+      height: 32px;
+      padding: 0 24px 0 6px;
+      border: none;
       background-color: transparent;
-      color: var(--text-primary);
-      font-size: 12px;
+      color: #111;
+      font-size: 13px;
+      line-height: 1.4;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       cursor: pointer;
       outline: none;
       appearance: none;
       -webkit-appearance: none;
       -moz-appearance: none;
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+      min-width: 64px;
+    }
+
+    .font-size-select-wrapper::after {
+      content: '';
+      position: absolute;
+      pointer-events: none;
+      right: 6px;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      transform: translateY(-50%);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M8.51528 7.98474C8.55014 8.01957 8.5778 8.06092 8.59667 8.10645C8.61555 8.15197 8.62526 8.20077 8.62526 8.25005C8.62526 8.29933 8.61555 8.34813 8.59667 8.39365C8.5778 8.43918 8.55014 8.48054 8.51528 8.51536L6.26528 10.7654C6.23045 10.8002 6.18909 10.8279 6.14357 10.8468C6.09804 10.8656 6.04925 10.8753 5.99996 10.8753C5.95068 10.8753 5.90189 10.8656 5.85636 10.8468C5.81084 10.8279 5.76948 10.8002 5.73465 10.7654L3.48465 8.51536C3.41429 8.445 3.37476 8.34956 3.37476 8.25005C3.37476 8.15054 3.41429 8.0551 3.48465 7.98474C3.55502 7.91437 3.65045 7.87484 3.74996 7.87484C3.84948 7.87484 3.94491 7.91437 4.01528 7.98474L5.99996 9.96989L7.98465 7.98474C8.01948 7.94987 8.06084 7.92221 8.10636 7.90334C8.15189 7.88447 8.20068 7.87476 8.24996 7.87476C8.29925 7.87476 8.34804 7.88447 8.39357 7.90334C8.43909 7.92221 8.48045 7.94987 8.51528 7.98474ZM4.01528 4.01536L5.99996 2.03021L7.98465 4.01536C8.05502 4.08573 8.15045 4.12526 8.24996 4.12526C8.34948 4.12526 8.44491 4.08573 8.51528 4.01536C8.58564 3.945 8.62517 3.84956 8.62517 3.75005C8.62517 3.65054 8.58564 3.5551 8.51528 3.48474L6.26528 1.23474C6.23045 1.19987 6.18909 1.17221 6.14357 1.15334C6.09804 1.13447 6.04925 1.12476 5.99996 1.12476C5.95068 1.12476 5.90189 1.13447 5.85636 1.15334C5.81084 1.17221 5.76948 1.19987 5.73465 1.23474L3.48465 3.48474C3.41429 3.5551 3.37476 3.65054 3.37476 3.75005C3.37476 3.84956 3.41429 3.945 3.48465 4.01536C3.55502 4.08573 3.65045 4.12526 3.74996 4.12526C3.84948 4.12526 3.94491 4.08573 4.01528 4.01536Z' fill='black'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
-      background-position: right 6px center;
-      background-size: 12px;
-      min-width: 50px;
+      background-size: 12px 12px;
     }
 
-    #font-size-select:hover {
-      border-color: var(--blue-primary);
-      background-color: var(--bg-secondary);
+    .toolbar-buttons {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      background: #ffffff;
+      padding: 0;
+      border-radius: 4px;
+      overflow: hidden;
     }
 
-    #font-size-select:focus {
-      border-color: var(--blue-primary);
-      box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    .toolbar-btn {
+      width: 34px;
+      height: 32px;
+      border: none;
+      background: #F8F9FA;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      transition: background-color 0.1s ease;
+      background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
+    }
+
+    .toolbar-btn:first-child {
+      border-radius: 4px 0 0 4px;
+    }
+
+    .toolbar-btn:last-child {
+      border-radius: 0 4px 4px 0;
+    }
+
+    .toolbar-btn:focus-visible {
+      outline: 2px solid #0066F3;
+      outline-offset: 1px;
+    }
+
+    .toolbar-btn.active {
+      background: #E6E7E8;
+    }
+    .toolbar-btn:hover {
+      background-color: #EFEFEF;
+    }
+
+    .toolbar-btn svg {
+      pointer-events: none;
+    }
+
+    .toolbar-toggle {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border: none;
+      background: none;
+      color: #0066F3;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0 8px;
+      height: 32px;
+      margin-left: auto;
+    }
+
+    .toolbar-toggle svg {
+      display: block;
+    }
+
+    .toolbar-wrapper.toolbar-hidden .toolbar-toggle {
+      padding: 0;
+      margin-left: 0;
+    }
+
+    .toolbar-wrapper.toolbar-hidden .toolbar-toggle .toggle-icon--hide {
+      display: none;
+    }
+
+    .toolbar-wrapper:not(.toolbar-hidden) .toolbar-toggle .toggle-icon--show {
+      display: none;
     }
 
     #notes-wrapper {
@@ -464,28 +555,80 @@
 
 
   <div class="content">
-    <!-- UPDATED: Text editing toolbar with keyboard shortcut hints -->
-    <div class="text-toolbar">
-      <div class="font-size-dropdown">
-        <label for="font-size">Font size</label><select id="font-size-select" title="Font Size">
-          <option value="12">12</option>
-          <option value="14">14</option>
-          <option value="16" selected>16</option>
-          <option value="18">18</option>
-          <option value="20">20</option>
-          <option value="24">24</option>
-          <option value="28">28</option>
-          <option value="32">32</option>
-          <option value="36">36</option>
-        </select>
+    <div class="toolbar-wrapper" id="toolbar-wrapper">
+      <div class="toolbar-content">
+        <div class="font-size-control">
+          <label for="font-size-select">Font size</label>
+          <div class="font-size-select-wrapper">
+            <select id="font-size-select" title="Font Size">
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16" selected>16</option>
+              <option value="18">18</option>
+              <option value="20">20</option>
+              <option value="24">24</option>
+              <option value="28">28</option>
+              <option value="32">32</option>
+              <option value="36">36</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toolbar-buttons">
+          <button class="toolbar-btn" id="bold-btn" title="Bold (Cmd+B)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M5 9.99992H12.5C13.3841 9.99992 14.2319 10.3511 14.857 10.9762C15.4821 11.6014 15.8333 12.4492 15.8333 13.3333C15.8333 14.2173 15.4821 15.0652 14.857 15.6903C14.2319 16.3154 13.3841 16.6666 12.5 16.6666H5.83333C5.61232 16.6666 5.40036 16.5788 5.24408 16.4225C5.0878 16.2662 5 16.0543 5 15.8333V4.16659C5 3.94557 5.0878 3.73361 5.24408 3.57733C5.40036 3.42105 5.61232 3.33325 5.83333 3.33325H11.6667C12.5507 3.33325 13.3986 3.68444 14.0237 4.30956C14.6488 4.93468 15 5.78253 15 6.66659C15 7.55064 14.6488 8.39849 14.0237 9.02361C13.3986 9.64873 12.5507 9.99992 11.6667 9.99992" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button class="toolbar-btn" id="italic-btn" title="Italic (Cmd+I)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M15.8333 3.33325H8.33325" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M11.6667 16.6667H4.16675" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M12.5 3.33325L7.5 16.6666" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button class="toolbar-btn" id="underline-btn" title="Underline (Cmd+U)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M5 3.33325V8.33325C5 9.65933 5.52678 10.9311 6.46447 11.8688C7.40215 12.8065 8.67392 13.3333 10 13.3333C11.3261 13.3333 12.5979 12.8065 13.5355 11.8688C14.4732 10.9311 15 9.65933 15 8.33325V3.33325" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3.33325 16.6667H16.6666" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button class="toolbar-btn" id="bullet-btn" title="Bullet List (Cmd+L)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M2.5 4.16675H2.50833" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M2.5 10H2.50833" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M2.5 15.8333H2.50833" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M6.66675 4.16675H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M6.66675 10H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M6.66675 15.8333H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button class="toolbar-btn" id="number-btn" title="Numbered List (Cmd+D)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M9.16675 4.16675H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M9.16675 10H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M9.16675 15.8333H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3.33325 3.33325H4.16659V7.49992" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3.33325 7.5H4.99992" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M5.41659 16.6666H2.83325C2.83325 15.8333 4.99992 15.0624 4.99992 13.7499C4.99995 13.4987 4.92426 13.2532 4.78271 13.0456C4.64117 12.838 4.44034 12.6779 4.20643 12.5861C3.97252 12.4943 3.71638 12.4752 3.47143 12.5312C3.22648 12.5872 3.00408 12.7157 2.83325 12.8999" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
       </div>
-      <span class="toolbar-separator">|</span>
-      <button class="toolbar-btn" id="bold-btn" title="Bold (Cmd+B)">B</button>
-      <button class="toolbar-btn" id="italic-btn" title="Italic (Cmd+I)">I</button>
-      <button class="toolbar-btn" id="underline-btn" title="Underline (Cmd+U)">U</button>
-      <span class="toolbar-separator">|</span>
-      <button class="toolbar-btn" id="bullet-btn" title="Bullet List (Cmd+L)">•</button>
-      <button class="toolbar-btn" id="number-btn" title="Numbered List (Cmd+D)">1.</button>
+
+      <button class="toolbar-toggle" id="toolbar-toggle" type="button">
+        <span class="toggle-label">Hide toolbar</span>
+        <span class="toggle-icon toggle-icon--hide" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2.94874 1.89326C2.91032 1.84995 2.86369 1.8147 2.81154 1.78954C2.7594 1.76439 2.70278 1.74984 2.64497 1.74673C2.58716 1.74362 2.5293 1.75201 2.47476 1.77142C2.42022 1.79084 2.37007 1.82088 2.32723 1.85982C2.28438 1.89876 2.24969 1.94581 2.22516 1.99825C2.20064 2.0507 2.18676 2.10749 2.18435 2.16533C2.18193 2.22317 2.19102 2.28092 2.21109 2.33523C2.23115 2.38954 2.2618 2.43932 2.30124 2.48169L3.35343 3.63943C1.36718 4.85841 0.512964 6.73748 0.475229 6.82279C0.450354 6.87874 0.4375 6.93929 0.4375 7.00052C0.4375 7.06175 0.450354 7.12231 0.475229 7.17826C0.49437 7.22146 0.957573 8.24849 1.98734 9.27826C3.35945 10.6498 5.09249 11.375 6.99999 11.375C7.98033 11.3806 8.95076 11.1787 9.84757 10.7827L11.0507 12.1067C11.0891 12.15 11.1358 12.1853 11.1879 12.2104C11.24 12.2356 11.2967 12.2501 11.3545 12.2532C11.4123 12.2563 11.4701 12.2479 11.5247 12.2285C11.5792 12.2091 11.6294 12.1791 11.6722 12.1401C11.7151 12.1012 11.7498 12.0541 11.7743 12.0017C11.7988 11.9493 11.8127 11.8925 11.8151 11.8346C11.8175 11.7768 11.8084 11.719 11.7884 11.6647C11.7683 11.6104 11.7376 11.5606 11.6982 11.5183L2.94874 1.89326ZM5.5371 6.04076L7.81593 8.54818C7.47276 8.72871 7.07936 8.79016 6.69748 8.72287C6.31561 8.65558 5.96689 8.46337 5.7061 8.17642C5.44531 7.88946 5.2872 7.52402 5.25661 7.13747C5.22603 6.75092 5.32469 6.36516 5.5371 6.04076ZM6.99999 10.5C5.31671 10.5 3.84617 9.88802 2.62882 8.68162C2.12915 8.18504 1.70418 7.6186 1.36718 6.99998C1.62367 6.51927 2.44234 5.17396 3.95663 4.29951L4.94101 5.37959C4.55991 5.86767 4.36364 6.47478 4.38688 7.09359C4.41012 7.71239 4.65138 8.30306 5.06801 8.76119C5.48465 9.21932 6.04983 9.51541 6.66366 9.59712C7.27749 9.67882 7.90045 9.5409 8.42242 9.20771L9.22796 10.0936C8.51702 10.3664 7.76145 10.5042 6.99999 10.5ZM7.32812 5.28115C7.21412 5.25939 7.11343 5.19324 7.0482 5.09724C6.98297 5.00125 6.95855 4.88327 6.98031 4.76927C7.00206 4.65527 7.06822 4.55458 7.16421 4.48935C7.26021 4.42413 7.37818 4.3997 7.49218 4.42146C8.04978 4.52956 8.55749 4.81502 8.93959 5.23526C9.32169 5.6555 9.5577 6.188 9.61242 6.75334C9.62322 6.86886 9.58769 6.98394 9.51364 7.07327C9.43959 7.1626 9.3331 7.21885 9.21757 7.22966C9.20391 7.23047 9.19022 7.23047 9.17656 7.22966C9.06721 7.23013 8.96165 7.18963 8.88067 7.11615C8.79969 7.04266 8.74917 6.94151 8.73906 6.83263C8.70223 6.4566 8.54503 6.10249 8.29082 5.82296C8.03661 5.54343 7.69898 5.35341 7.32812 5.28115ZM13.5231 7.17826C13.5002 7.22966 12.9462 8.4563 11.6987 9.57357C11.6561 9.61296 11.6061 9.64348 11.5516 9.66334C11.497 9.68321 11.4391 9.69203 11.3811 9.68928C11.3231 9.68654 11.2663 9.67228 11.2139 9.64735C11.1615 9.62242 11.1145 9.58731 11.0758 9.54407C11.0371 9.50082 11.0074 9.45031 10.9884 9.39547C10.9694 9.34062 10.9615 9.28255 10.9652 9.22463C10.9688 9.16671 10.984 9.11009 11.0098 9.05808C11.0355 9.00607 11.0714 8.95971 11.1152 8.92169C11.7272 8.37188 12.2413 7.72205 12.6355 6.99998C12.2978 6.38079 11.8719 5.81396 11.3712 5.31724C10.1538 4.11193 8.68328 3.49998 6.99999 3.49998C6.64532 3.49954 6.29121 3.52826 5.94124 3.58584C5.88433 3.5959 5.82599 3.59459 5.76959 3.58198C5.71319 3.56937 5.65984 3.5457 5.61264 3.51236C5.56543 3.47901 5.5253 3.43665 5.49456 3.3877C5.46383 3.33876 5.44309 3.28421 5.43355 3.22721C5.42402 3.17021 5.42587 3.11188 5.439 3.0556C5.45214 2.99932 5.47629 2.94619 5.51007 2.8993C5.54385 2.85241 5.58659 2.81267 5.63582 2.78239C5.68504 2.7521 5.73978 2.73187 5.79687 2.72287C6.19454 2.65721 6.59694 2.62446 6.99999 2.62498C8.90749 2.62498 10.6405 3.35013 12.0127 4.72224C13.0424 5.75201 13.5056 6.77959 13.5248 6.82279C13.5496 6.87874 13.5625 6.93929 13.5625 7.00052C13.5625 7.06175 13.5496 7.12231 13.5248 7.17826H13.5231Z" fill="#0066F3" />
+        </span>
+        <span class="toggle-icon toggle-icon--show" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 3.25C3.79167 3.25 1.75 6.06042 1.75 7C1.75 7.93958 3.79167 10.75 7 10.75C10.2083 10.75 12.25 7.93958 12.25 7C12.25 6.06042 10.2083 3.25 7 3.25Z" stroke="#0066F3" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M7 8.75C7.9665 8.75 8.75 7.9665 8.75 7C8.75 6.0335 7.9665 5.25 7 5.25C6.0335 5.25 5.25 6.0335 5.25 7C5.25 7.9665 6.0335 8.75 7 8.75Z" stroke="#0066F3" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+      </button>
     </div>
 
     <div id="notes-wrapper">
