@@ -18,5 +18,9 @@ contextBridge.exposeInMainWorld('api', {
   onExportNotes: (callback) => ipcRenderer.on('export-notes', callback),
   onImportNotes: (callback) => ipcRenderer.on('import-notes', callback),
   onExportBackup: (callback) => ipcRenderer.on('export-backup', callback),
-  onImportBackup: (callback) => ipcRenderer.on('import-backup', callback)
+  onImportBackup: (callback) => ipcRenderer.on('import-backup', callback),
+
+  // Window state helpers
+  getFullscreenState: () => ipcRenderer.invoke('is-window-fullscreen'),
+  onFullscreenChanged: (callback) => ipcRenderer.on('window-fullscreen-changed', callback)
 })

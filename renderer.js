@@ -6,11 +6,11 @@ const FALLBACK_NOTE_TITLE = 'Untitled'// Placeholder title shown when a note has
 // Inline SVG used for the delete button beside each note in the sidebar.
 const TRASH_ICON_SVG = `
   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <path d="M3.5 4.375V11.375C3.5 11.9705 3.97653 12.447 4.572 12.447H9.427C10.0225 12.447 10.499 11.9705 10.499 11.375V4.375" stroke="#4C4C4C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M2.625 4.375H11.375" stroke="#4C4C4C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M5.03125 4.375V3.5C5.03125 3.30109 5.11004 3.11032 5.24918 2.97118C5.38832 2.83204 5.57909 2.75325 5.778 2.75325H8.222C8.42091 2.75325 8.61168 2.83204 8.75082 2.97118C8.88996 3.11032 8.96875 3.30109 8.96875 3.5V4.375" stroke="#4C4C4C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M6.125 6.125V10.0625" stroke="#4C4C4C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M7.875 6.125V10.0625" stroke="#4C4C4C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M3.5 4.375V11.375C3.5 11.9705 3.97653 12.447 4.572 12.447H9.427C10.0225 12.447 10.499 11.9705 10.499 11.375V4.375" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M2.625 4.375H11.375" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M5.03125 4.375V3.5C5.03125 3.30109 5.11004 3.11032 5.24918 2.97118C5.38832 2.83204 5.57909 2.75325 5.778 2.75325H8.222C8.42091 2.75325 8.61168 2.83204 8.75082 2.97118C8.88996 3.11032 8.96875 3.30109 8.96875 3.5V4.375" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M6.125 6.125V10.0625" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M7.875 6.125V10.0625" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
   </svg>
 `
 
@@ -587,6 +587,12 @@ function applySidebarState(collapsed, { persist = false, suppressAnimation = fal
   }
 }
 
+function updateFullscreenClass(isFullscreen) {
+  const body = document.body
+  if (!body) return
+  body.classList.toggle('window-fullscreen', !!isFullscreen)
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   editor = document.getElementById('notes')
   noteList = document.getElementById('note-list')
@@ -604,6 +610,21 @@ window.addEventListener('DOMContentLoaded', async () => {
   sidebarToggleShortcutHint = isMac ? '⌥⌘S' : 'Ctrl+Alt+S'
 
   updateOpacity(1.0)
+
+  if (window.api?.onFullscreenChanged) {
+    window.api.onFullscreenChanged((_, isFullscreen) => {
+      updateFullscreenClass(isFullscreen)
+    })
+  }
+
+  if (window.api?.getFullscreenState) {
+    try {
+      const isFullscreen = await window.api.getFullscreenState()
+      updateFullscreenClass(isFullscreen)
+    } catch (error) {
+      console.error('getFullscreenState error', error)
+    }
+  }
 
   if (opacitySlider) {
     opacitySlider.style.background = 'linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) 100%, var(--bg-tertiary) 100%, var(--bg-tertiary) 100%)'

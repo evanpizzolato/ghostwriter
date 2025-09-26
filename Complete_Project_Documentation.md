@@ -4,7 +4,7 @@
 A privacy-focused Electron-based macOS app for presenter notes that stay hidden from screenshots and screen shares. Built with Electron's content protection API and designed for seamless presentation use.
 
 **Author:** Evan Pizzolato  
-**Version:** 0.1.0  
+**Version:** 0.2.0  
 **License:** MIT
 
 ## Project Structure & File Organization
@@ -53,13 +53,14 @@ A privacy-focused Electron-based macOS app for presenter notes that stay hidden 
 - **IPC Handlers**: Manages communication between main and renderer processes
 - **Global Shortcuts**: Registers system-wide hotkeys
 - **Menu System**: Creates native macOS menu bar and system tray
-- **Data Persistence**: Handles file I/O for notes storage, privacy state, and sidebar preference
+- **Data Persistence**: Saves and loads the full notes collection, active note pointer, privacy state, and sidebar preference to a JSON file in `userData`
 
 ### Renderer Process (`renderer.js`)
-- **UI Logic**: Manages the contenteditable editor, collapsible sidebar, toolbar, and user interactions
-- **Auto-save**: Debounced saving with a 500ms delay
-- **Import/Export**: File handling for notes backup and sharing
-- **State Management**: Tracks font size, opacity, click-through mode, toolbar visibility, and sidebar collapse state
+- **UI Logic**: Manages the contenteditable editor, multi-note sidebar, toolbar, and user interactions
+- **Auto-save**: Debounced collection saving (500ms) that keeps notes ordered by last edit
+- **Import/Export**: File handling for JSON backups and single-note markdown/text export
+- **State Management**: Tracks font size, opacity, click-through mode, toolbar visibility, sidebar collapse, loaded notes array, and the active note id
+- **Sidebar CRUD**: Provides create, select, and delete actions with live title updates reflecting the first line of each note
 
 ### Preload Script (`preload.js`)
 - **Security Bridge**: Exposes safe APIs to renderer via `contextBridge`
@@ -98,9 +99,14 @@ mainWindow.setIgnoreMouseEvents(true)  // Clicks pass through
 
 ### 5. Data Persistence
 - **Location**: `~/Library/Application Support/presenter-notes/notes.json`
-- **Format**: JSON with notes content and metadata
+- **Format**: JSON object containing:
+  - `notes`: array of `{ id, content, createdAt, updatedAt }`
+  - `activeNoteId`: id of the note currently open in the editor
+  - `privacy`: boolean toggle for content protection
+  - `sidebarCollapsed`: boolean storing sidebar visibility preference
+  - `savedAt`: timestamp of the last persist
 - **Auto-save**: Debounced (500ms after typing stops)
-- **Backup**: Export/import functionality for markdown/plain text and JSON backups
+- **Backup**: Export/import retains multiple notes via JSON backup flow; single-note markdown export uses the active note
 - **Sidebar State**: Persists the collapsed/expanded sidebar preference alongside notes and privacy
 
 ### 6. UI Controls
@@ -110,6 +116,7 @@ mainWindow.setIgnoreMouseEvents(true)  // Clicks pass through
 - Opacity slider (10–100%) with gradient track
 - Save status indicator inside the window header
 - Collapsible sidebar (default collapsed) with macOS-style toggle button, keyboard shortcut (`⌥⌘S`/`Ctrl+Alt+S`), smooth animation, and state persistence
+- Multi-note sidebar showing titles derived from the first line of content, “New Note” button, and inline delete icons
 
 ## Package Configuration
 

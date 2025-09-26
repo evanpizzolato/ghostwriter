@@ -568,6 +568,18 @@ function createWindow() {
   console.log('Content protection enabled')
   
   mainWindow.loadFile('index.html')
+
+  mainWindow.on('enter-full-screen', () => {
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('window-fullscreen-changed', true)
+    }
+  })
+
+  mainWindow.on('leave-full-screen', () => {
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('window-fullscreen-changed', false)
+    }
+  })
 }
 
 // Handle saving notes from the renderer
@@ -632,6 +644,15 @@ ipcMain.handle('load-notes', () => {
       privacy: fallback.privacy,
       sidebarCollapsed: fallback.sidebarCollapsed
     }
+  }
+})
+
+ipcMain.handle('is-window-fullscreen', () => {
+  try {
+    return mainWindow ? mainWindow.isFullScreen() : false
+  } catch (error) {
+    console.error('is-window-fullscreen error', error)
+    return false
   }
 })
 
