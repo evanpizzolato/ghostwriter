@@ -1,3 +1,4 @@
+// Core Electron and Node imports used throughout the main process.
 const { app, BrowserWindow, ipcMain, Menu, globalShortcut, Tray, nativeImage } = require('electron')
 const path = require('path')
 const fs = require('fs')
@@ -14,10 +15,11 @@ let mainWindow
 let tray = null  // Add tray variable
 
 
-// Get the path where we'll store notes
+// Compute the file path where we cache all persisted application state.
 const userDataPath = app.getPath('userData')
 const notesPath = path.join(userDataPath, 'notes.json')
 
+// Factory that produces the empty/default notes state written to disk.
 const defaultNotesState = () => ({
   notes: [],
   activeNoteId: null,
@@ -28,6 +30,7 @@ const defaultNotesState = () => ({
 
 let notesState = defaultNotesState()
 
+// Load previously saved notes and UI state from disk when the app boots.
 function loadNotesState() {
   try {
     if (fs.existsSync(notesPath)) {
@@ -55,6 +58,7 @@ function loadNotesState() {
   return notesState
 }
 
+// Merge updates into the current notes state and write them to disk.
 function persistNotesState(updates = {}) {
   const nextState = {
     ...notesState,
@@ -94,6 +98,7 @@ loadNotesState()
 
 
 // Create system tray icon
+// The tray offers quick access to visibility, opacity, and quit actions.
 function createTray() {
   // Create a 16x16 template image for the tray (macOS style)
   // For now we'll use a simple colored square - you can add a real icon later
@@ -226,6 +231,7 @@ function createTray() {
 }
 
 // Register global shortcuts
+// These shortcuts let the presenter control the window without touching the UI.
 function registerGlobalShortcuts() {
   // Toggle show/hide with Cmd+Shift+N
   const toggleRegistered = globalShortcut.register('Command+Shift+N', () => {
@@ -300,6 +306,7 @@ const opacityRegistered = globalShortcut.register('Command+Shift+O', () => {
 }
 
 // Create the application menu (your existing createMenu function stays the same)
+// The macOS menu exposes the same controls offered via the tray and shortcuts.
 function createMenu() {
   const template = [
     {
@@ -531,6 +538,7 @@ function createMenu() {
   Menu.setApplicationMenu(menu)
 }
 
+// Spawn the always-on-top presenter window with our HTML/CSS UI.
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 728,
@@ -563,6 +571,7 @@ function createWindow() {
 }
 
 // Handle saving notes from the renderer
+// The renderer sends updated text or settings; we persist the merged payload.
 ipcMain.on('save-notes', (event, payload) => {
   try {
     if (!payload || typeof payload !== 'object') {
@@ -594,6 +603,7 @@ ipcMain.on('save-notes', (event, payload) => {
 })
 
 ipcMain.on('save-sidebar-state', (event, collapsed) => {
+  // Sidebar toggles come in separately so we can update immediately.
   try {
     persistNotesState({ sidebarCollapsed: !!collapsed })
   } catch (error) {
@@ -602,6 +612,7 @@ ipcMain.on('save-sidebar-state', (event, collapsed) => {
 })
 
 // Handle loading notes
+// When the renderer boots it calls this to restore saved notes and settings.
 ipcMain.handle('load-notes', () => {
   try {
     const state = loadNotesState()
@@ -639,6 +650,7 @@ ipcMain.handle('toggle-privacy', () => {
 });
 
 // Update the app.whenReady
+// Initialize menus, window, tray, and shortcuts once Electron is ready.
 app.whenReady().then(() => {
   createMenu()
   createWindow()
@@ -647,6 +659,7 @@ app.whenReady().then(() => {
 })
 
 // Clean up global shortcuts when app quits
+// Prevent orphaned system shortcuts if the app shuts down unexpectedly.
 app.on('will-quit', () => {
   globalShortcut.unregisterAll()
 })

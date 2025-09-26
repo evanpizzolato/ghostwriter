@@ -1,7 +1,9 @@
-// This runs in your web page
-const SAVE_DEBOUNCE_MS = 500
-const NOTE_TITLE_MAX_LENGTH = 60
-const FALLBACK_NOTE_TITLE = 'Untitled'
+// This script runs inside the renderer (BrowserWindow) and powers the UI.
+// Tunables for how the editor behaves.
+const SAVE_DEBOUNCE_MS = 500          // Delay before writing to disk after typing stops.
+const NOTE_TITLE_MAX_LENGTH = 60      // Number of characters we use for a sidebar title preview.
+const FALLBACK_NOTE_TITLE = 'Untitled'// Placeholder title shown when a note has no content yet.
+// Inline SVG used for the delete button beside each note in the sidebar.
 const TRASH_ICON_SVG = `
   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
     <path d="M3.5 4.375V11.375C3.5 11.9705 3.97653 12.447 4.572 12.447H9.427C10.0225 12.447 10.499 11.9705 10.499 11.375V4.375" stroke="#4C4C4C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
@@ -12,6 +14,7 @@ const TRASH_ICON_SVG = `
   </svg>
 `
 
+// Generate a unique identifier for new notes, using crypto if available.
 const generateNoteId = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID()
@@ -20,16 +23,18 @@ const generateNoteId = () => {
   return `note-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
+// Mutable state that mirrors the UI.
 let saveTimeout
-let currentFontSize = 18  // Default font size
-let currentOpacity = 1.0  // Default opacity
+let currentFontSize = 18  // Default font size for the editor content area.
+let currentOpacity = 1.0  // Opacity value passed down from menu/tray.
 let toolbarVisible = true
 let sidebarCollapsed = true
 let sidebarToggleShortcutHint = '⌥⌘S'
 
-let notes = []
-let activeNoteId = null
+let notes = []             // Array of note objects currently loaded.
+let activeNoteId = null    // Identifier for the note shown in the editor.
 
+// Cached DOM references filled inside DOMContentLoaded.
 let editor
 let noteList
 let newNoteButton
@@ -38,7 +43,7 @@ let saveStatus
 
 
 
-// Function to download a file
+// Trigger a browser download with the provided content and filename.
 function downloadFile(content, filename, type = 'text/plain') {
   const blob = new Blob([content], { type })
   const url = URL.createObjectURL(blob)
@@ -51,7 +56,7 @@ function downloadFile(content, filename, type = 'text/plain') {
   URL.revokeObjectURL(url)
 }
 
-// Function to read uploaded file
+// Read an uploaded file as text so it can be imported into the app.
 function readFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -61,6 +66,7 @@ function readFile(file) {
   })
 }
 
+// Pull the first non-empty line out of the HTML content to use as a sidebar title.
 function deriveTitleFromContent(content = '') {
   if (!content) return FALLBACK_NOTE_TITLE
 
@@ -84,6 +90,7 @@ function deriveTitleFromContent(content = '') {
   return firstLine
 }
 
+// Ensure every note object has the fields our UI expects.
 function normalizeNote(rawNote = {}) {
   const now = new Date().toISOString()
   const content = typeof rawNote.content === 'string' ? rawNote.content : ''
@@ -100,6 +107,7 @@ function normalizeNote(rawNote = {}) {
   }
 }
 
+// Sanitize a raw notes array that came from disk or an import.
 function prepareNotes(rawNotes) {
   if (!Array.isArray(rawNotes)) {
     return { notes: [], mutated: true }
@@ -118,21 +126,25 @@ function prepareNotes(rawNotes) {
   return { notes: sanitized, mutated }
 }
 
+// Convert stored timestamps into sortable numbers, defaulting to zero on failure.
 function parseTimestamp(value) {
   if (!value) return 0
   const time = Date.parse(value)
   return Number.isNaN(time) ? 0 : time
 }
 
+// Keep the in-memory notes sorted by most recently updated first.
 function sortNotesByUpdated() {
   notes.sort((a, b) => parseTimestamp(b.updatedAt) - parseTimestamp(a.updatedAt))
 }
 
+// Return the note currently shown in the editor, or null if nothing is available.
 function getActiveNote() {
   if (!activeNoteId) return null
   return notes.find(note => note.id === activeNoteId) || null
 }
 
+// Place the caret at the end of the editor so typing continues naturally.
 function focusEditorAtEnd() {
   if (!editor) return
 
@@ -149,6 +161,7 @@ function focusEditorAtEnd() {
   selection.addRange(range)
 }
 
+// Gather the minimal state the main process needs to persist.
 function buildStatePayload() {
   return {
     notes: notes.map(({ id, content, createdAt, updatedAt }) => ({ id, content, createdAt, updatedAt })),
@@ -158,6 +171,7 @@ function buildStatePayload() {
   }
 }
 
+// Push the latest notes and settings to the main process without delay.
 function persistStateImmediate() {
   if (!window.api || !window.api.saveNotes) return
 
@@ -168,6 +182,7 @@ function persistStateImmediate() {
   }
 }
 
+// Debounced save helper used while the user is typing.
 function scheduleStateSave() {
   if (saveStatus) {
     saveStatus.textContent = 'Saving...'
@@ -188,6 +203,7 @@ function scheduleStateSave() {
   }, SAVE_DEBOUNCE_MS)
 }
 
+// Rebuild the sidebar list so it reflects the in-memory notes array.
 function renderNotesList() {
   if (!noteList) return
 
@@ -248,6 +264,7 @@ function renderNotesList() {
   noteList.appendChild(fragment)
 }
 
+// Load the requested note into the editor and mark it active in the sidebar.
 function selectNote(noteId, { focus = true } = {}) {
   if (!editor) return
 
@@ -276,6 +293,7 @@ function selectNote(noteId, { focus = true } = {}) {
   persistStateImmediate()
 }
 
+// Insert a fresh note at the top of the list and switch the editor to it.
 function createNote({ focus = true, persist = true } = {}) {
   const now = new Date().toISOString()
   const note = {
@@ -309,6 +327,7 @@ function createNote({ focus = true, persist = true } = {}) {
   return note
 }
 
+// Remove a note, then keep the editor pointed at the next available entry.
 function deleteNote(noteId) {
   const index = notes.findIndex(note => note.id === noteId)
   if (index === -1) return
@@ -336,6 +355,7 @@ function deleteNote(noteId) {
   persistStateImmediate()
 }
 
+// Apply editor changes to the active note, bump its timestamp, and re-render.
 function updateActiveNoteContent(content) {
   const note = getActiveNote()
   if (!note) return

@@ -63,7 +63,7 @@
       background-color: rgba(248, 249, 250, 1);
       /* Fully opaque */
       border-bottom: 1px solid var(--bg-tertiary);
-      padding: 8px 16px;
+      padding: 4px 16px;
       -webkit-app-region: drag;
       display: flex;
       align-items: center;
@@ -126,9 +126,8 @@
       width: 200px;
       min-width: 200px;
       max-width: 200px;
-      background: linear-gradient(180deg, #F6F7F9 0%, #EDEFF3 100%);
+      background-color: rgb(248, 249, 250);
       border-right: 1px solid rgba(0, 0, 0, 0.05);
-      box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.03);
       transition: width 0.24s ease, min-width 0.24s ease, opacity 0.24s ease;
       display: flex;
       flex-direction: column;
@@ -149,7 +148,7 @@
       position: relative;
       flex: 1;
       min-height: 0;
-      padding: 16px 20px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -158,45 +157,44 @@
 
     .new-note-button {
       -webkit-app-region: no-drag;
+
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      background: rgba(255, 255, 255, 0.85);
+      gap: 12px;
+      padding: 8px 10px;
+      border-radius: 5px;
+border: 1px solid #E1E1E1;
+background: linear-gradient(180deg, #FFF 0%, #FCFCFC 100%);
       color: var(--text-primary);
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 510;
+      height: 32px;
       cursor: pointer;
       transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .new-note-button:hover {
+    /* .new-note-button:hover {
       background: rgba(255, 255, 255, 1);
       border-color: rgba(0, 102, 243, 0.25);
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-    }
+    } */
 
-    .new-note-button:focus-visible {
+    /* .new-note-button:focus-visible {
       outline: 2px solid var(--blue-primary);
       outline-offset: 2px;
-    }
+    } */
 
     .new-note-icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: rgba(0, 102, 243, 0.12);
+      width: 16px;
+      height: 16px;
     }
 
     .new-note-icon svg {
-      width: 12px;
-      height: 12px;
-      color: var(--blue-primary);
+      width: 16px;
+      height: 16px;
     }
 
     .note-list {
@@ -206,15 +204,12 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      padding-right: 4px;
     }
 
     .note-item {
       display: flex;
       align-items: center;
-      border-radius: 8px;
-      border: 1px solid transparent;
-      background: rgba(255, 255, 255, 0.65);
+      border-radius: 5px;
       transition: background-color 0.2s ease, border-color 0.2s ease;
     }
 
@@ -223,8 +218,8 @@
     }
 
     .note-item--active {
-      border-color: rgba(0, 102, 243, 0.35);
-      background: rgba(0, 102, 243, 0.12);
+      background: var(--blue-primary);
+      color: white;
     }
 
     .note-item__select {
@@ -242,9 +237,9 @@
       transition: color 0.2s ease;
     }
 
-    .note-item__select:hover {
-      color: var(--blue-primary);
-    }
+    /* .note-item__select:hover {
+      color: var(--bg-tertiary);
+    } */
 
     .note-item__select:focus-visible {
       outline: none;
@@ -252,7 +247,7 @@
     }
 
     .note-item--active .note-item__select {
-      color: var(--blue-primary);
+      color: white;
       font-weight: 600;
     }
 
@@ -265,18 +260,18 @@
       height: 32px;
       margin-right: 4px;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
       background: transparent;
       cursor: pointer;
       opacity: 0.6;
       transition: opacity 0.2s ease, background-color 0.2s ease;
     }
 
-    .note-item__delete:hover,
+    /* .note-item__delete:hover,
     .note-item__delete:focus-visible {
       opacity: 1;
       background: rgba(0, 0, 0, 0.05);
-    }
+    } */
 
     .note-item__delete:focus-visible {
       outline: 2px solid var(--blue-primary);
@@ -445,12 +440,12 @@
       display: none;
       background-color: var(--warning);
       color: white;
-      padding: 3px 8px;
+      padding: 2px 4px;
       border-radius: 4px;
-      font-size: 11px;
+      font-size: 9px;
+      text-transform: uppercase;
       font-weight: 600;
       margin-left: 8px;
-      animation: pulse 2s infinite;
     }
 
     .content {
@@ -471,7 +466,7 @@
       width: 100%;
       padding: 0 4px;
       gap: 1px;
-      border-bottom: 1px solid #D9DADB;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       -webkit-app-region: no-drag;
       background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
     }
@@ -512,7 +507,8 @@
       align-items: center;
       gap: 8px;
       background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
-      border-radius: 4px;
+      border-right: 1px solid white;
+      border-radius: 0px;
       padding: 0 8px;
       min-height: 32px;
     }
@@ -542,7 +538,7 @@
       appearance: none;
       -webkit-appearance: none;
       -moz-appearance: none;
-      min-width: 64px;
+      min-width: 60px;
     }
 
     .font-size-select-wrapper::after {
@@ -583,13 +579,14 @@
       background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
     }
 
-    .toolbar-btn:first-child {
+    /* .toolbar-btn:first-child {
       border-radius: 4px 0 0 4px;
-    }
+    }*/
 
     .toolbar-btn:last-child {
-      border-radius: 0 4px 4px 0;
-    }
+      border-radius: 0px;
+      border-right: 1px solid white;
+    } 
 
     .toolbar-btn:focus-visible {
       outline: 2px solid #0066F3;
@@ -814,10 +811,10 @@
       <div class="sidebar-content">
         <button class="new-note-button" id="new-note-button" type="button" aria-label="Create a new note">
           <span class="new-note-icon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M6 1.5V10.5" stroke="#0066F3" stroke-width="1.5" stroke-linecap="round" />
-              <path d="M1.5 6H10.5" stroke="#0066F3" stroke-width="1.5" stroke-linecap="round" />
-            </svg>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14.3538 3.64615L12.3538 1.64615C12.3073 1.59967 12.2522 1.56279 12.1915 1.53763C12.1308 1.51246 12.0657 1.49951 12 1.49951C11.9343 1.49951 11.8692 1.51246 11.8085 1.53763C11.7478 1.56279 11.6927 1.59967 11.6462 1.64615L5.64625 7.64615C5.59983 7.69262 5.56303 7.74778 5.53793 7.80848C5.51284 7.86918 5.49995 7.93422 5.5 7.99991V9.9999C5.5 10.1325 5.55268 10.2597 5.64645 10.3535C5.74021 10.4472 5.86739 10.4999 6 10.4999H8C8.06568 10.5 8.13073 10.4871 8.19143 10.462C8.25212 10.4369 8.30728 10.4001 8.35375 10.3537L14.3538 4.35366C14.4002 4.30722 14.4371 4.25207 14.4623 4.19138C14.4874 4.13068 14.5004 4.06561 14.5004 3.99991C14.5004 3.9342 14.4874 3.86913 14.4623 3.80843C14.4371 3.74774 14.4002 3.69259 14.3538 3.64615ZM7.79313 9.4999H6.5V8.20678L10.5 4.20678L11.7931 5.49991L7.79313 9.4999ZM12.5 4.79303L11.2069 3.49991L12 2.70678L13.2931 3.99991L12.5 4.79303ZM14 7.99991V12.9999C14 13.2651 13.8946 13.5195 13.7071 13.707C13.5196 13.8945 13.2652 13.9999 13 13.9999H3C2.73478 13.9999 2.48043 13.8945 2.29289 13.707C2.10536 13.5195 2 13.2651 2 12.9999V2.9999C2 2.73469 2.10536 2.48033 2.29289 2.2928C2.48043 2.10526 2.73478 1.9999 3 1.9999H8C8.13261 1.9999 8.25979 2.05258 8.35355 2.14635C8.44732 2.24012 8.5 2.3673 8.5 2.4999C8.5 2.63251 8.44732 2.75969 8.35355 2.85346C8.25979 2.94723 8.13261 2.9999 8 2.9999H3V12.9999H13V7.99991C13 7.8673 13.0527 7.74012 13.1464 7.64635C13.2402 7.55258 13.3674 7.49991 13.5 7.49991C13.6326 7.49991 13.7598 7.55258 13.8536 7.64635C13.9473 7.74012 14 7.8673 14 7.99991Z" fill="black"/>
+              </svg>
+              
           </span>
           <span class="new-note-label">New Note</span>
         </button>
@@ -849,25 +846,25 @@
 
         <div class="toolbar-buttons">
           <button class="toolbar-btn" id="bold-btn" title="Bold (Cmd+B)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
               <path d="M5 9.99992H12.5C13.3841 9.99992 14.2319 10.3511 14.857 10.9762C15.4821 11.6014 15.8333 12.4492 15.8333 13.3333C15.8333 14.2173 15.4821 15.0652 14.857 15.6903C14.2319 16.3154 13.3841 16.6666 12.5 16.6666H5.83333C5.61232 16.6666 5.40036 16.5788 5.24408 16.4225C5.0878 16.2662 5 16.0543 5 15.8333V4.16659C5 3.94557 5.0878 3.73361 5.24408 3.57733C5.40036 3.42105 5.61232 3.33325 5.83333 3.33325H11.6667C12.5507 3.33325 13.3986 3.68444 14.0237 4.30956C14.6488 4.93468 15 5.78253 15 6.66659C15 7.55064 14.6488 8.39849 14.0237 9.02361C13.3986 9.64873 12.5507 9.99992 11.6667 9.99992" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
           <button class="toolbar-btn" id="italic-btn" title="Italic (Cmd+I)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
               <path d="M15.8333 3.33325H8.33325" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M11.6667 16.6667H4.16675" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M12.5 3.33325L7.5 16.6666" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
           <button class="toolbar-btn" id="underline-btn" title="Underline (Cmd+U)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
               <path d="M5 3.33325V8.33325C5 9.65933 5.52678 10.9311 6.46447 11.8688C7.40215 12.8065 8.67392 13.3333 10 13.3333C11.3261 13.3333 12.5979 12.8065 13.5355 11.8688C14.4732 10.9311 15 9.65933 15 8.33325V3.33325" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M3.33325 16.6667H16.6666" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
           <button class="toolbar-btn" id="bullet-btn" title="Bullet List (Cmd+L)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
               <path d="M2.5 4.16675H2.50833" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M2.5 10H2.50833" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M2.5 15.8333H2.50833" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
@@ -877,7 +874,7 @@
             </svg>
           </button>
           <button class="toolbar-btn" id="number-btn" title="Numbered List (Cmd+D)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
               <path d="M9.16675 4.16675H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M9.16675 10H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M9.16675 15.8333H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
