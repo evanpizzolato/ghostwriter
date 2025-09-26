@@ -4,13 +4,17 @@ const path = require('path')
 const fs = require('fs')
 
 // =====  PRIVACY TOGGLE  =====
-let privacyOn = true;          // will be overwritten when we load
+// Tracks whether screenshots should be blocked; value is hydrated from disk before the window spins up.
+let privacyOn = true
+
+// Apply or remove the macOS window-level content protection safeguard used to hide notes from captures.
 function setContentProtection(win, on) {
-  if (!win) return;
-  win.setContentProtection(on);      // macOS magic
+  if (!win) return
+  win.setContentProtection(on)
   // win.webContents.send('privacy-changed', on); // tell renderer
 }
 
+// Mutable references to the single BrowserWindow and tray icon we manage.
 let mainWindow
 let tray = null  // Add tray variable
 
@@ -19,7 +23,7 @@ let tray = null  // Add tray variable
 const userDataPath = app.getPath('userData')
 const notesPath = path.join(userDataPath, 'notes.json')
 
-// Factory that produces the empty/default notes state written to disk.
+// Factory that produces the empty/default notes state written to disk when nothing has been saved yet.
 const defaultNotesState = () => ({
   notes: [],
   activeNoteId: null,
@@ -30,7 +34,7 @@ const defaultNotesState = () => ({
 
 let notesState = defaultNotesState()
 
-// Load previously saved notes and UI state from disk when the app boots.
+// Load previously saved notes and UI state from disk when the app boots so the renderer can start hydrated.
 function loadNotesState() {
   try {
     if (fs.existsSync(notesPath)) {
@@ -60,11 +64,13 @@ function loadNotesState() {
 
 // Merge updates into the current notes state and write them to disk.
 function persistNotesState(updates = {}) {
+  // Capture the existing state so we can layer in only the provided updates.
   const nextState = {
     ...notesState,
     savedAt: new Date().toISOString()
   }
 
+  // Merge notes, active note pointer, privacy flag, and sidebar toggle individually.
   if (updates.notes !== undefined && Array.isArray(updates.notes)) {
     nextState.notes = updates.notes
   }
@@ -86,6 +92,7 @@ function persistNotesState(updates = {}) {
   privacyOn = notesState.privacy ?? true
 
   try {
+    // Persist the merged snapshot immediately; the renderer manages debouncing before calling this.
     fs.writeFileSync(notesPath, JSON.stringify(notesState, null, 2))
     console.log('Notes state saved →', { privacy: notesState.privacy, sidebarCollapsed: notesState.sidebarCollapsed })
   } catch (error) {
@@ -97,11 +104,10 @@ loadNotesState()
 
 
 
-// Create system tray icon
-// The tray offers quick access to visibility, opacity, and quit actions.
+// Create system tray icon and contextual menu for quick toggles outside the main window.
 function createTray() {
-  // Create a 16x16 template image for the tray (macOS style)
-  // For now we'll use a simple colored square - you can add a real icon later
+  // Create a 16x16 template image for the tray (macOS style).
+  // For now we'll use a simple colored square - you can add a real icon later.
   const icon = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAdgAAAHYBTnsmCAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAEISURBVDiNpZMxasNAEEVfxEbgQpVOkELnSCFwYXAhcKETpBC4ELjQCVIIXAhcCFwIXAhc6AQpBC4ELgQuBC4ELgQuBDswi7SSVmt7YGCZnfn/zZ+ZFQAhxBfQAzpAG2gBTaABXANXQA2oAudABTgDysApcAIcA0fAIXAAFIA9IA/sgAwQAx6AB7x730MKuAL2gV0gC2wDW8AmkAY2gDUgCawCCSAOxIAVYBlYAhaB+aQQYuBL+GaSmB7TMc0kdY5MkmctdzAzBy3/m4M5c9Cz3EGStXRSyTQJIT4tJelYq6qqSikrlmVp7cN2u91dSvlqPpNSjv8HAKjruu84TlHXdTdN04HneW8TN30DLGJhTKHhDDwAAAAASUVORK5CYII=')
   
   tray = new Tray(icon)
@@ -110,12 +116,13 @@ function createTray() {
   //Show Inspect Element devtool
   //mainWindow.webContents.toggleDevTools();
   
-  // Create tray menu
+  // Create tray menu for show/hide, opacity, and font size shortcuts.
   const trayMenu = Menu.buildFromTemplate([
     {
       label: 'Show Notes',
       accelerator: 'Cmd+Shift+N',
       click: () => {
+        // Bring the main window forward if it exists and is hidden.
         if (mainWindow) {
           mainWindow.show()
           mainWindow.focus()
@@ -125,6 +132,7 @@ function createTray() {
     {
       label: 'Hide Notes',
       click: () => {
+        // Hide the main window without quitting the application.
         if (mainWindow) {
           mainWindow.hide()
         }
@@ -137,6 +145,7 @@ function createTray() {
         {
           label: '100% (Opaque)',
           click: () => {
+            // Send a renderer IPC command to make the window fully opaque.
             if (mainWindow) {
               mainWindow.webContents.send('change-opacity', 1.0)
             }
@@ -145,6 +154,7 @@ function createTray() {
         {
           label: '70%',
           click: () => {
+            // Lower opacity to 70%.
             if (mainWindow) {
               mainWindow.webContents.send('change-opacity', 0.7)
             }
@@ -153,6 +163,7 @@ function createTray() {
         {
           label: '40%',
           click: () => {
+            // Lower opacity to 40%.
             if (mainWindow) {
               mainWindow.webContents.send('change-opacity', 0.4)
             }
@@ -161,6 +172,7 @@ function createTray() {
         {
           label: '20% (Very Transparent)',
           click: () => {
+            // Lower opacity to 20%.
             if (mainWindow) {
               mainWindow.webContents.send('change-opacity', 0.2)
             }
@@ -169,6 +181,7 @@ function createTray() {
         {
           label: '10% (Nearly Invisible)',
           click: () => {
+            // Lower opacity to 10% for an almost invisible window.
             if (mainWindow) {
               mainWindow.webContents.send('change-opacity', 0.1)
             }
@@ -183,6 +196,7 @@ function createTray() {
         {
           label: 'Increase',
           click: () => {
+            // Ask renderer to bump the editor font size up one notch.
             if (mainWindow) {
               mainWindow.webContents.send('change-font-size', 'increase')
             }
@@ -191,6 +205,7 @@ function createTray() {
         {
           label: 'Decrease',
           click: () => {
+            // Ask renderer to shrink the editor font size.
             if (mainWindow) {
               mainWindow.webContents.send('change-font-size', 'decrease')
             }
@@ -248,17 +263,16 @@ function registerGlobalShortcuts() {
   if (!toggleRegistered) {
     console.log('Failed to register Cmd+Shift+N - might be in use by another app')
   }
-  
-// Cycle opacity with Cmd+Shift+O
-let currentOpacityIndex = 0
-const opacities = [1.0, 0.7, 0.4, 0.2, 0.1]
+  // Cycle opacity with Cmd+Shift+O by walking through this list of preset values.
+  let currentOpacityIndex = 0
+  const opacities = [1.0, 0.7, 0.4, 0.2, 0.1]
 
-const opacityRegistered = globalShortcut.register('Command+Shift+O', () => {
-  if (mainWindow) {
-    currentOpacityIndex = (currentOpacityIndex + 1) % opacities.length
-    mainWindow.webContents.send('change-opacity', opacities[currentOpacityIndex])
-  }
-})
+  const opacityRegistered = globalShortcut.register('Command+Shift+O', () => {
+    if (mainWindow) {
+      currentOpacityIndex = (currentOpacityIndex + 1) % opacities.length
+      mainWindow.webContents.send('change-opacity', opacities[currentOpacityIndex])
+    }
+  })
   
   if (!opacityRegistered) {
     console.log('Failed to register Cmd+Shift+O - might be in use by another app')
@@ -308,9 +322,11 @@ const opacityRegistered = globalShortcut.register('Command+Shift+O', () => {
 // Create the application menu (your existing createMenu function stays the same)
 // The macOS menu exposes the same controls offered via the tray and shortcuts.
 function createMenu() {
+  // Build the macOS application menu with shortcuts that mirror the tray and renderer controls.
   const template = [
     {
       label: 'Presenter Notes',
+      // App menu: handles about panel, visibility, quit, and shortcut legend.
       submenu: [
         {
           label: 'About Presenter Notes',
@@ -350,10 +366,11 @@ function createMenu() {
       ]
     },
     {
-        label: 'File',
-        submenu: [
-          {
-            label: 'Export Notes...',
+      label: 'File',
+      // File menu: marshals import/export flows handled in the renderer.
+      submenu: [
+        {
+          label: 'Export Notes...',
             accelerator: 'Cmd+E',
             click: async () => {
               if (mainWindow) {
@@ -391,6 +408,7 @@ function createMenu() {
       },
     {
       label: 'Edit',
+      // Edit menu: standard macOS editing commands forwarded to the webview.
       submenu: [
         { label: 'Undo', accelerator: 'Cmd+Z', role: 'undo' },
         { label: 'Redo', accelerator: 'Cmd+Shift+Z', role: 'redo' },
@@ -403,6 +421,7 @@ function createMenu() {
     },
     {
       label: 'View',
+      // View menu: tuning options for font size, opacity, and click-through.
       submenu: [
         {
           label: 'Increase Font Size',
@@ -472,6 +491,7 @@ function createMenu() {
     },
     {
       label: 'Window',
+      // Window menu: basic window management roles for macOS.
       submenu: [
         { label: 'Minimize', accelerator: 'Cmd+M', role: 'minimize' },
         { label: 'Close', accelerator: 'Cmd+W', role: 'close' }
@@ -479,6 +499,7 @@ function createMenu() {
     },
     {
       label: 'Help',
+      // Help menu: static primer on privacy mode and shortcuts.
       submenu: [
         {
           label: '✓ Privacy Mode Active',
@@ -539,24 +560,25 @@ function createMenu() {
 }
 
 // Spawn the always-on-top presenter window with our HTML/CSS UI.
+// Spin up the main BrowserWindow that hosts the entire presenter notes UI.
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 728,
     height: 600,
-    
+
     frame: false,
     transparent: true,
     alwaysOnTop: true,
     backgroundColor: '#00000000',  // Add this line - fully transparent
     visibleOnAllWorkspaces: true,
     titleBarStyle: 'hiddenInset', // Add this line - enables custom titlebar
-    
+
     resizable: true,
     minWidth: 642,
     minHeight: 400,
-    
+
     roundedCorners: true,
-    
+
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -564,17 +586,21 @@ function createWindow() {
     }
   })
 
+  // Reapply the saved privacy preference so window captures stay blocked if desired.
   setContentProtection(mainWindow, privacyOn);
   console.log('Content protection enabled')
   
+  // Load the HTML shell after the window exists.
   mainWindow.loadFile('index.html')
 
+  // Watch for fullscreen entry so the renderer can adjust layout spacing on macOS.
   mainWindow.on('enter-full-screen', () => {
     if (mainWindow && mainWindow.webContents) {
       mainWindow.webContents.send('window-fullscreen-changed', true)
     }
   })
 
+  // Likewise notify the renderer when fullscreen exits so margins can be restored.
   mainWindow.on('leave-full-screen', () => {
     if (mainWindow && mainWindow.webContents) {
       mainWindow.webContents.send('window-fullscreen-changed', false)
@@ -590,6 +616,7 @@ ipcMain.on('save-notes', (event, payload) => {
       return
     }
 
+    // Build a minimal update payload containing only the fields we allow to change.
     const updates = {}
 
     if (Array.isArray(payload.notes)) {
@@ -608,6 +635,7 @@ ipcMain.on('save-notes', (event, payload) => {
       updates.sidebarCollapsed = !!payload.sidebarCollapsed
     }
 
+    // Persist the merged snapshot to disk.
     persistNotesState(updates)
   } catch (error) {
     console.error('save-notes error', error)
@@ -617,6 +645,7 @@ ipcMain.on('save-notes', (event, payload) => {
 ipcMain.on('save-sidebar-state', (event, collapsed) => {
   // Sidebar toggles come in separately so we can update immediately.
   try {
+    // Persist a boolean flag so the renderer restores the same collapsed state next launch.
     persistNotesState({ sidebarCollapsed: !!collapsed })
   } catch (error) {
     console.error('save-sidebar-state error', error)
@@ -649,6 +678,7 @@ ipcMain.handle('load-notes', () => {
 
 ipcMain.handle('is-window-fullscreen', () => {
   try {
+    // Guard against the window not being ready yet when the renderer queries the state.
     return mainWindow ? mainWindow.isFullScreen() : false
   } catch (error) {
     console.error('is-window-fullscreen error', error)
@@ -656,7 +686,7 @@ ipcMain.handle('is-window-fullscreen', () => {
   }
 })
 
-// user clicked the toggle → flip flag & window
+// Respond to the renderer toggling privacy mode from the menu or toolbar.
 ipcMain.handle('toggle-privacy', () => {
   privacyOn = !privacyOn;
 
@@ -665,6 +695,7 @@ ipcMain.handle('toggle-privacy', () => {
       mainWindow.setContentProtection(privacyOn);
     }
 
+  // Save the new privacy preference so it is remembered next launch.
   persistNotesState({ privacy: privacyOn })
 
   return privacyOn;
@@ -673,6 +704,7 @@ ipcMain.handle('toggle-privacy', () => {
 // Update the app.whenReady
 // Initialize menus, window, tray, and shortcuts once Electron is ready.
 app.whenReady().then(() => {
+  // Build all chrome before showing UI.
   createMenu()
   createWindow()
   createTray()  // Add tray icon
@@ -682,9 +714,11 @@ app.whenReady().then(() => {
 // Clean up global shortcuts when app quits
 // Prevent orphaned system shortcuts if the app shuts down unexpectedly.
 app.on('will-quit', () => {
+  // Release any system-wide accelerators we claimed.
   globalShortcut.unregisterAll()
 })
 
 app.on('window-all-closed', () => {
+  // This app does not keep a menu-bar-only presence—quit when the last window closes.
   app.quit()
 })

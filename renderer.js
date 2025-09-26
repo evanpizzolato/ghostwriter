@@ -369,7 +369,7 @@ function updateActiveNoteContent(content) {
   scheduleStateSave()
 }
 
-// Function to update font size
+// Adjust the editor base font size using keyboard shortcuts or menu commands.
 function updateFontSize(direction) {
   const editor = document.getElementById('notes')
 
@@ -399,6 +399,7 @@ function insertTextFormat(command, value = null) {
   updateToolbarStates()
 }
 
+// Toggle bullet or numbered list formatting for the current selection.
 function insertListItem(listType) {
   const editor = document.getElementById('notes')
   editor.focus()
@@ -416,7 +417,7 @@ function insertListItem(listType) {
   updateToolbarStates()
 }
 
-// NEW: Apply font size to selected text
+// Apply an explicit font size span when users pick a size from the dropdown.
 function applyFontSize(size) {
   const editor = document.getElementById('notes')
   editor.focus()
@@ -463,7 +464,7 @@ function applyFontSize(size) {
   editor.dispatchEvent(new Event('input'))
 }
 
-// NEW: Update toolbar button states based on cursor position
+// Reflect the current selection's formatting by toggling toolbar button active states.
 function updateToolbarStates() {
   // Check current formatting at cursor position
   const boldBtn = document.getElementById('bold-btn')
@@ -479,6 +480,7 @@ function updateToolbarStates() {
   bulletBtn.classList.toggle('active', document.queryCommandState('insertUnorderedList'))
   numberBtn.classList.toggle('active', document.queryCommandState('insertOrderedList'))
 }
+// Fallback helper that maps pixel sizes to document.execCommand's 1-7 scale.
 function setFontSize(size) {
   const editor = document.getElementById('notes')
   editor.focus()
@@ -496,7 +498,7 @@ function setFontSize(size) {
   document.execCommand('fontSize', false, commandSize)
 }
 
-// Function to update opacity
+// Adjust UI transparency as opacity changes from the slider, menu, or tray.
 function updateOpacity(value) {
   currentOpacity = value
 
@@ -554,6 +556,7 @@ function updateOpacity(value) {
   document.getElementById('opacity-slider').value = percentage
 }
 
+// Expand or collapse the sidebar while optionally persisting the preference.
 function applySidebarState(collapsed, { persist = false, suppressAnimation = false } = {}) {
   const body = document.body
   const toggle = document.getElementById('sidebar-toggle')
@@ -587,12 +590,14 @@ function applySidebarState(collapsed, { persist = false, suppressAnimation = fal
   }
 }
 
+// Toggle a body class so CSS can adapt spacing while fullscreen is active.
 function updateFullscreenClass(isFullscreen) {
   const body = document.body
   if (!body) return
   body.classList.toggle('window-fullscreen', !!isFullscreen)
 }
 
+// Kick off app wiring after the HTML document is fully parsed.
 window.addEventListener('DOMContentLoaded', async () => {
   editor = document.getElementById('notes')
   noteList = document.getElementById('note-list')
@@ -609,6 +614,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   sidebarToggleShortcutHint = isMac ? '⌥⌘S' : 'Ctrl+Alt+S'
 
+  // Default to full opacity on load so UI elements look crisp.
   updateOpacity(1.0)
 
   if (window.api?.onFullscreenChanged) {
@@ -627,9 +633,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (opacitySlider) {
+    // Match the native slider track to the app's accent color.
     opacitySlider.style.background = 'linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) 100%, var(--bg-tertiary) 100%, var(--bg-tertiary) 100%)'
   }
 
+  // Restore persisted state (notes array, active note, sidebar, etc.).
   const loadedState = await window.api.loadNotes()
   const preparedState = prepareNotes(loadedState?.notes)
   notes = preparedState.notes
@@ -645,6 +653,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   applySidebarState(initialSidebarCollapsed, { suppressAnimation: true })
 
   if (!notes.length) {
+    // Ensure at least one note exists so the editor always has somewhere to write.
     const now = new Date().toISOString()
     notes.push({
       id: generateNoteId(),
@@ -674,12 +683,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   updateToolbarStates()
 
   if (newNoteButton) {
+    // Clicking the button inserts a new blank note at the top of the list.
     newNoteButton.addEventListener('click', () => {
       createNote({ focus: true, persist: true })
     })
   }
 
   if (sidebarToggle) {
+    // Toggle the sidebar visibility without losing the user's preference.
     sidebarToggle.addEventListener('click', () => {
       applySidebarState(!sidebarCollapsed, { persist: true })
     })
@@ -692,6 +703,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (event.key.toLowerCase() !== 's') return
 
     event.preventDefault()
+    // Mirror the menu shortcut for toggling the sidebar.
     applySidebarState(!sidebarCollapsed, { persist: true })
   })
 
@@ -700,6 +712,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       updateActiveNoteContent(e.target.innerHTML)
     })
 
+    // Refresh toolbar state whenever the selection changes via typing or clicking.
     editor.addEventListener('keyup', updateToolbarStates)
     editor.addEventListener('mouseup', updateToolbarStates)
     editor.addEventListener('focus', updateToolbarStates)
@@ -777,6 +790,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     updateToolbarToggleState()
   }
 
+  // Hidden file input reused for the plain-text and JSON import flows.
   const fileInput = document.createElement('input')
   fileInput.type = 'file'
   fileInput.style.display = 'none'
@@ -869,6 +883,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   })
 
   if (privacyCheckbox) {
+    // Keep the badge and persisted state in sync when privacy toggle flips.
     privacyCheckbox.addEventListener('change', async (e) => {
       const on = e.target.checked
       await window.api.togglePrivacy()
@@ -877,6 +892,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     })
   }
 
+  // Export/import handlers register callbacks exposed via preload.
   window.api.onExportNotes(async () => {
     const activeNote = getActiveNote()
     if (!activeNote) return
@@ -914,7 +930,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 })
 
-// NEW: Toolbar button functionality
+// Toolbar button shortcuts mimic the keyboard formatting accelerators.
 document.getElementById('bold-btn').addEventListener('click', () => {
   insertTextFormat('bold')
 })
@@ -939,6 +955,7 @@ document.getElementById('number-btn').addEventListener('click', () => {
 
 
 
+// Subscribe to IPC-driven tweaks from menus, tray, and shortcuts.
 // Handle font size changes from menu
 window.api.onFontSizeChange((event, direction) => {
   updateFontSize(direction)
@@ -981,6 +998,7 @@ window.api.onPrivacyChanged((e, on) => {
   updatePrivacyBadge(on);
 });
 
+// Show or hide the privacy badge text based on the active state.
 function updatePrivacyBadge(on) {
   document.querySelector('.privacy-badge').style.display = on ? 'inline-block' : 'none';
 }
