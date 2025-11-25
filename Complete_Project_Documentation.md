@@ -4,7 +4,7 @@
 A privacy-focused Electron-based macOS app for presenter notes that stay hidden from screenshots and screen shares. Built with Electron's content protection API and designed for seamless presentation use.
 
 **Author:** Evan Pizzolato  
-**Version:** 0.2.0  
+**Version:** 0.3.0  
 **License:** MIT
 
 ## Project Structure & File Organization
@@ -105,6 +105,7 @@ mainWindow.setIgnoreMouseEvents(true)  // Clicks pass through
   - `privacy`: boolean toggle for content protection
   - `sidebarCollapsed`: boolean storing sidebar visibility preference
   - `savedAt`: timestamp of the last persist
+- **Empty-note guard**: notes without real characters (whitespace-only/blank) are dropped from saves; `activeNoteId` is cleared if it points to a discarded note
 - **Auto-save**: Debounced (500ms after typing stops)
 - **Backup**: Export/import retains multiple notes via JSON backup flow; single-note markdown export uses the active note
 - **Sidebar State**: Persists the collapsed/expanded sidebar preference alongside notes and privacy
@@ -116,7 +117,7 @@ mainWindow.setIgnoreMouseEvents(true)  // Clicks pass through
 - Opacity slider (10–100%) with gradient track
 - Save status indicator inside the window header
 - Collapsible sidebar (default collapsed) with macOS-style toggle button, keyboard shortcut (`⌥⌘S`/`Ctrl+Alt+S`), smooth animation, and state persistence
-- Multi-note sidebar showing titles derived from the first line of content, “New Note” button, and inline delete icons
+- Multi-note sidebar shows only titles, with full-row click targets, relative timestamps (just now, 2h ago, Yesterday, Nov. 18), and a 12px inline trash icon; “New Note” is now a toolbar button at the right of the editor controls
 
 ## Package Configuration
 
@@ -124,8 +125,9 @@ mainWindow.setIgnoreMouseEvents(true)  // Clicks pass through
 ```json
 {
   "devDependencies": {
-    "electron": "^latest",
-    "electron-builder": "^latest"
+    "electron": "latest",
+    "electron-builder": "latest",
+    "electronmon": "latest"
   }
 }
 ```
@@ -138,9 +140,13 @@ mainWindow.setIgnoreMouseEvents(true)  // Clicks pass through
 
 ### Build Commands
 ```bash
-npm start        # Development mode
+npm start        # Development mode with auto-restart (electronmon)
 npm run dist-mac # Create distribution DMG
 ```
+
+### Developer Workflow
+- `electronmon` watches source changes and restarts the Electron process automatically during `npm start`.
+- Notes and settings persist between restarts via the JSON store in `userData`.
 
 ## Complete Source Code
 

@@ -5,12 +5,11 @@ const NOTE_TITLE_MAX_LENGTH = 60      // Number of characters we use for a sideb
 const FALLBACK_NOTE_TITLE = 'Untitled'// Placeholder title shown when a note has no content yet.
 // Inline SVG used for the delete button beside each note in the sidebar.
 const TRASH_ICON_SVG = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <path d="M3.5 4.375V11.375C3.5 11.9705 3.97653 12.447 4.572 12.447H9.427C10.0225 12.447 10.499 11.9705 10.499 11.375V4.375" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M2.625 4.375H11.375" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M5.03125 4.375V3.5C5.03125 3.30109 5.11004 3.11032 5.24918 2.97118C5.38832 2.83204 5.57909 2.75325 5.778 2.75325H8.222C8.42091 2.75325 8.61168 2.83204 8.75082 2.97118C8.88996 3.11032 8.96875 3.30109 8.96875 3.5V4.375" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M6.125 6.125V10.0625" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M7.875 6.125V10.0625" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" />
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
+    <polyline points="3 6 5 6 21 6"/>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+    <line x1="10" y1="11" x2="10" y2="17"/>
+    <line x1="14" y1="11" x2="14" y2="17"/>
   </svg>
 `
 
@@ -30,6 +29,29 @@ const generateNoteId = () => {
   }
 
   return `note-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+// Format a timestamp relative to now, e.g. "just now", "2h ago", "Yesterday", or "Nov. 18".
+function formatRelativeTimestamp(dateString) {
+  const parsed = new Date(dateString)
+  if (Number.isNaN(parsed.getTime())) return ''
+
+  const now = new Date()
+  const diffMs = now - parsed
+  const seconds = Math.floor(diffMs / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+
+  if (seconds < 60) return 'just now'
+  if (minutes < 60) return `${Math.max(1, minutes)}m ago`
+  if (hours < 24) return `${Math.max(1, hours)}h ago`
+  if (hours < 48) return 'Yesterday'
+
+  const parts = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).formatToParts(parsed)
+  const month = parts.find(p => p.type === 'month')?.value ?? ''
+  const day = parts.find(p => p.type === 'day')?.value ?? ''
+  const monthWithPeriod = month ? `${month}.` : ''
+  return `${monthWithPeriod} ${day}`.trim()
 }
 
 // Mutable state that mirrors the UI.
@@ -102,6 +124,14 @@ function deriveTitleFromContent(content = '') {
   }
 
   return firstLine
+}
+
+// Determine if a note contains any non-whitespace characters once HTML is stripped.
+function noteHasTypedContent(note = {}) {
+  const temp = document.createElement('div')
+  temp.innerHTML = note.content || ''
+  const text = (temp.textContent || '').replace(/\u00A0/g, ' ').trim()
+  return text.length > 0
 }
 
 // Reflect the active note's title in the header.
@@ -186,9 +216,12 @@ function focusEditorAtEnd() {
 
 // Gather the minimal state the main process needs to persist.
 function buildStatePayload() {
+  const persistedNotes = notes.filter(noteHasTypedContent)
+  const activeId = persistedNotes.some(note => note.id === activeNoteId) ? activeNoteId : null
+
   return {
-    notes: notes.map(({ id, content, createdAt, updatedAt }) => ({ id, content, createdAt, updatedAt })),
-    activeNoteId,
+    notes: persistedNotes.map(({ id, content, createdAt, updatedAt }) => ({ id, content, createdAt, updatedAt })),
+    activeNoteId: activeId,
     privacy: privacyCheckbox ? !!privacyCheckbox.checked : true,
     sidebarCollapsed
   }
@@ -265,9 +298,14 @@ function renderNotesList() {
       selectButton.setAttribute('aria-current', 'true')
     }
 
-    selectButton.addEventListener('click', () => {
+    selectButton.addEventListener('click', (event) => {
+      event.stopPropagation()
       selectNote(note.id)
     })
+
+    const timestamp = document.createElement('span')
+    timestamp.className = 'note-item__timestamp'
+    timestamp.textContent = formatRelativeTimestamp(note.updatedAt || note.createdAt)
 
     const deleteButton = document.createElement('button')
     deleteButton.type = 'button'
@@ -279,7 +317,12 @@ function renderNotesList() {
       deleteNote(note.id)
     })
 
+    item.addEventListener('click', () => {
+      selectNote(note.id)
+    })
+
     item.appendChild(selectButton)
+    item.appendChild(timestamp)
     item.appendChild(deleteButton)
     fragment.appendChild(item)
   })
@@ -696,7 +739,7 @@ function updateFullscreenClass(isFullscreen) {
 window.addEventListener('DOMContentLoaded', async () => {
   editor = document.getElementById('notes')
   noteList = document.getElementById('note-list')
-  newNoteButton = document.getElementById('new-note-button')
+  newNoteButton = document.getElementById('toolbar-new-note-button')
   saveStatus = document.getElementById('save-status')
   privacyCheckbox = document.getElementById('privacy-checkbox')
 
@@ -808,6 +851,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (newNoteButton) {
     // Clicking the button inserts a new blank note at the top of the list.
     newNoteButton.addEventListener('click', () => {
+      if (editor) {
+        updateActiveNoteContent(editor.innerHTML)
+        persistStateImmediate()
+      }
       createNote({ focus: true, persist: true })
     })
   }

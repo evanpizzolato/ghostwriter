@@ -144,9 +144,9 @@
 
     .sidebar {
       width: 200px;
-      min-width: 200px;
-      max-width: 200px;
-      background-color: rgb(248, 249, 250);
+      min-width: 225px;
+      max-width: 225px;
+      background-color: white;
       border-right: 1px solid rgba(0, 0, 0, 0.05);
       transition: width 0.24s ease, min-width 0.24s ease, opacity 0.24s ease;
       display: flex;
@@ -170,54 +170,11 @@
       position: relative;
       flex: 1;
       min-height: 0;
-      padding: 10px;
       display: flex;
       flex-direction: column;
       gap: 16px;
       overflow: hidden;
       z-index: 1;
-    }
-
-    .new-note-button {
-      -webkit-app-region: no-drag;
-
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 10px;
-      border-radius: 5px;
-      border: 1px solid #E1E1E1;
-      background: linear-gradient(180deg, #FFF 0%, #FCFCFC 100%);
-      color: var(--text-primary);
-      font-size: 13px;
-      font-weight: 510;
-      height: 32px;
-      cursor: pointer;
-      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    /* .new-note-button:hover {
-      background: rgba(255, 255, 255, 1);
-      border-color: rgba(0, 102, 243, 0.25);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-    } */
-
-    /* .new-note-button:focus-visible {
-      outline: 2px solid var(--blue-primary);
-      outline-offset: 2px;
-    } */
-
-    .new-note-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-    }
-
-    .new-note-icon svg {
-      width: 16px;
-      height: 16px;
     }
 
     /* Scrollable column containing note buttons. */
@@ -227,20 +184,20 @@
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 4px;
     }
 
     /* Shared base styles for each note row. */
     .note-item {
       display: flex;
       align-items: center;
-      height: 32px;
-      padding: 8px 10px;
-      gap: 2px;
-      border-radius: 5px;
-      background: transparent;
+      height: auto;
+      min-height: 44px;
+      padding: 10px 12px;
+      gap: 8px;
       color: var(--text-primary);
       transition: background-color 0.2s ease, color 0.2s ease;
+      border-bottom: 1px solid var(--bg-tertiary);
+      cursor: pointer;
     }
 
     .note-item:not(.note-item--active):hover {
@@ -260,13 +217,15 @@
       background: transparent;
       border: none;
       padding: 0;
-      font-size: 14px;
+      font-size: 13px;
       color: inherit;
       cursor: pointer;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       transition: color 0.2s ease;
+      justify-content: flex-start;
+      font-weight: 600;
     }
 
     /* .note-item__select:hover {
@@ -305,6 +264,17 @@
 
     .note-item__delete:hover {
       opacity: 1;
+    }
+
+    .note-item__timestamp {
+      font-size: 12px;
+      color: #8a8f98;
+      white-space: nowrap;
+      margin-left: 8px;
+    }
+
+    .note-item--active .note-item__timestamp {
+      color: rgba(255, 255, 255, 0.9);
     }
 
     /* .note-item__delete:hover,
@@ -627,14 +597,22 @@
       overflow: hidden;
     }
 
+    .toolbar-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      padding-left: 6px;
+      gap: 1px;
+    }
+
     .toolbar-buttons--sidebar {
       border-right: 1px solid white;
       margin-right: 4px;
     }
 
     .toolbar-btn {
-      width: 32px;
-      height: 32px;
+      width: 26px;
+      height: 26px;
       border: none;
       background: #FFFFFF;
       display: flex;
@@ -643,6 +621,8 @@
       cursor: pointer;
       padding: 0;
       transition: background-color 0.1s ease;
+      margin: 2px;
+    border-radius: 6px;
     }
 
     .toolbar-btn.active {
@@ -653,10 +633,6 @@
       border-radius: 4px 0 0 4px;
     }*/
 
-    .toolbar-btn:last-child {
-      border-radius: 0px;
-      border-right: 1px solid white;
-    } 
 
     .toolbar-btn:focus-visible {
       outline: 2px solid #0066F3;
@@ -855,7 +831,7 @@
   <div class="header">
     <div class="header-left">
       <button class="header-sidebar-toggle" id="toolbar-sidebar-toggle" title="Show sidebar" aria-label="Show sidebar">
-        <svg class="sidebar-toggle-icon feather feather-sidebar" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="sidebar-toggle-icon feather feather-sidebar" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
           <line x1="9" y1="3" x2="9" y2="21"/>
         </svg>
@@ -896,17 +872,6 @@
   <div class="app-layout">
     <aside id="app-sidebar" class="sidebar" role="complementary" aria-label="Sidebar">
       <div class="sidebar-content">
-        <!-- Create note button -->
-        <button class="new-note-button" id="new-note-button" type="button" aria-label="Create a new note">
-          <span class="new-note-icon" aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M14.3538 3.64615L12.3538 1.64615C12.3073 1.59967 12.2522 1.56279 12.1915 1.53763C12.1308 1.51246 12.0657 1.49951 12 1.49951C11.9343 1.49951 11.8692 1.51246 11.8085 1.53763C11.7478 1.56279 11.6927 1.59967 11.6462 1.64615L5.64625 7.64615C5.59983 7.69262 5.56303 7.74778 5.53793 7.80848C5.51284 7.86918 5.49995 7.93422 5.5 7.99991V9.9999C5.5 10.1325 5.55268 10.2597 5.64645 10.3535C5.74021 10.4472 5.86739 10.4999 6 10.4999H8C8.06568 10.5 8.13073 10.4871 8.19143 10.462C8.25212 10.4369 8.30728 10.4001 8.35375 10.3537L14.3538 4.35366C14.4002 4.30722 14.4371 4.25207 14.4623 4.19138C14.4874 4.13068 14.5004 4.06561 14.5004 3.99991C14.5004 3.9342 14.4874 3.86913 14.4623 3.80843C14.4371 3.74774 14.4002 3.69259 14.3538 3.64615ZM7.79313 9.4999H6.5V8.20678L10.5 4.20678L11.7931 5.49991L7.79313 9.4999ZM12.5 4.79303L11.2069 3.49991L12 2.70678L13.2931 3.99991L12.5 4.79303ZM14 7.99991V12.9999C14 13.2651 13.8946 13.5195 13.7071 13.707C13.5196 13.8945 13.2652 13.9999 13 13.9999H3C2.73478 13.9999 2.48043 13.8945 2.29289 13.707C2.10536 13.5195 2 13.2651 2 12.9999V2.9999C2 2.73469 2.10536 2.48033 2.29289 2.2928C2.48043 2.10526 2.73478 1.9999 3 1.9999H8C8.13261 1.9999 8.25979 2.05258 8.35355 2.14635C8.44732 2.24012 8.5 2.3673 8.5 2.4999C8.5 2.63251 8.44732 2.75969 8.35355 2.85346C8.25979 2.94723 8.13261 2.9999 8 2.9999H3V12.9999H13V7.99991C13 7.8673 13.0527 7.74012 13.1464 7.64635C13.2402 7.55258 13.3674 7.49991 13.5 7.49991C13.6326 7.49991 13.7598 7.55258 13.8536 7.64635C13.9473 7.74012 14 7.8673 14 7.99991Z" fill="black"/>
-              </svg>
-              
-          </span>
-          <span class="new-note-label">New Note</span>
-        </button>
-
         <!-- Dynamic list of saved notes -->
         <div id="note-list" class="note-list" role="list" aria-label="Notes"></div>
       </div>
@@ -931,26 +896,26 @@
 
         <div class="toolbar-buttons">
           <button class="toolbar-btn" id="bold-btn" title="Bold (Cmd+B)">
-            <svg class="feather feather-bold" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="feather feather-bold" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
               <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
               <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
             </svg>
           </button>
           <button class="toolbar-btn" id="italic-btn" title="Italic (Cmd+I)">
-            <svg class="feather feather-italic" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="feather feather-italic" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
               <line x1="19" y1="4" x2="10" y2="4" />
               <line x1="14" y1="20" x2="5" y2="20" />
               <line x1="15" y1="4" x2="9" y2="20" />
             </svg>
           </button>
           <button class="toolbar-btn" id="underline-btn" title="Underline (Cmd+U)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
               <path d="M5 3.33325V8.33325C5 9.65933 5.52678 10.9311 6.46447 11.8688C7.40215 12.8065 8.67392 13.3333 10 13.3333C11.3261 13.3333 12.5979 12.8065 13.5355 11.8688C14.4732 10.9311 15 9.65933 15 8.33325V3.33325" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M3.33325 16.6667H16.6666" stroke="black" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
           <button class="toolbar-btn" id="bullet-btn" title="Bullet List (Cmd+L)">
-            <svg class="feather feather-list" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="feather feather-list" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
               <line x1="8" y1="6" x2="21" y2="6" />
               <line x1="8" y1="12" x2="21" y2="12" />
               <line x1="8" y1="18" x2="21" y2="18" />
@@ -960,16 +925,24 @@
             </svg>
           </button>
           <button class="toolbar-btn" id="number-btn" title="Numbered List (Cmd+D)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none">
-              <path d="M9.16675 4.16675H17.5001" stroke="black" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M9.16675 10H17.5001" stroke="black" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M9.16675 15.8333H17.5001" stroke="black" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
+              <path d="M9.16675 4.16675H17.5001" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M9.16675 10H17.5001" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M9.16675 15.8333H17.5001" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M3.33325 3.33325H4.16659V7.49992" stroke="black" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M3.33325 7.5H4.99992" stroke="black" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3.33325 7.5H4.99992" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M5.41659 16.6666H2.83325C2.83325 15.8333 4.99992 15.0624 4.99992 13.7499C4.99995 13.4987 4.92426 13.2532 4.78271 13.0456C4.64117 12.838 4.44034 12.6779 4.20643 12.5861C3.97252 12.4943 3.71638 12.4752 3.47143 12.5312C3.22648 12.5872 3.00408 12.7157 2.83325 12.8999" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
-            </div>
+        </div>
+        <div class="toolbar-actions">
+          <button class="toolbar-btn" id="toolbar-new-note-button" title="New Note">
+            <svg class="feather feather-edit" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+        </div>
           </div>
 
           <!-- <button class="toolbar-toggle" id="toolbar-toggle" type="button">
