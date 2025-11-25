@@ -14,6 +14,15 @@ const TRASH_ICON_SVG = `
   </svg>
 `
 
+// Predefined text styles exposed in the toolbar dropdown.
+const FONT_STYLES = [
+  { key: 'body', label: 'Body', size: 16, lineHeight: 1.5, weight: 400 },
+  { key: 'heading4', label: 'Heading 4', size: 18, lineHeight: 1.2, weight: 500 },
+  { key: 'heading3', label: 'Heading 3', size: 22, lineHeight: 1.2, weight: 500 },
+  { key: 'heading2', label: 'Heading 2', size: 26, lineHeight: 1.2, weight: 500 },
+  { key: 'heading1', label: 'Heading 1', size: 32, lineHeight: 1.2, weight: 500 }
+]
+
 // Generate a unique identifier for new notes, using crypto if available.
 const generateNoteId = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -25,7 +34,7 @@ const generateNoteId = () => {
 
 // Mutable state that mirrors the UI.
 let saveTimeout
-let currentFontSize = 18  // Default font size for the editor content area.
+let currentFontStyle = 'body'  // Default text style for the editor content area.
 let currentOpacity = 1.0  // Opacity value passed down from menu/tray.
 let toolbarVisible = true
 let sidebarCollapsed = true
@@ -73,7 +82,12 @@ function deriveTitleFromContent(content = '') {
   const temp = document.createElement('div')
   temp.innerHTML = content
 
-  const rawText = (temp.innerText || temp.textContent || '').replace(/\r/g, '')
+  // Ensure block breaks become newlines for title extraction.
+  temp.querySelectorAll('div,p,li,br').forEach(node => {
+    node.insertAdjacentText('beforebegin', '\n')
+  })
+
+  const rawText = (temp.textContent || '').replace(/\r/g, '')
   const firstLine = rawText
     .split('\n')
     .map(line => line.trim())
@@ -88,6 +102,15 @@ function deriveTitleFromContent(content = '') {
   }
 
   return firstLine
+}
+
+// Reflect the active note's title in the header.
+function updateHeaderTitle(note = getActiveNote()) {
+  const display = document.getElementById('note-title-display')
+  if (!display) return
+
+  const title = note ? deriveTitleFromContent(note.content) : FALLBACK_NOTE_TITLE
+  display.textContent = title
 }
 
 // Ensure every note object has the fields our UI expects.
@@ -282,6 +305,7 @@ function selectNote(noteId, { focus = true } = {}) {
 
   activeNoteId = noteId
   editor.innerHTML = targetNote.content || ''
+  updateHeaderTitle(targetNote)
 
   renderNotesList()
   updateToolbarStates()
@@ -312,6 +336,7 @@ function createNote({ focus = true, persist = true } = {}) {
   if (editor) {
     editor.innerHTML = ''
     updateToolbarStates()
+    updateHeaderTitle(note)
 
     if (focus) {
       focusEditorAtEnd()
@@ -347,6 +372,7 @@ function deleteNote(noteId) {
     if (editor) {
       editor.innerHTML = notes[0].content || ''
       updateToolbarStates()
+      updateHeaderTitle(notes[0])
       focusEditorAtEnd()
     }
   }
@@ -364,24 +390,35 @@ function updateActiveNoteContent(content) {
   note.updatedAt = new Date().toISOString()
   note.title = deriveTitleFromContent(content)
 
+  updateHeaderTitle(note)
   sortNotesByUpdated()
   renderNotesList()
   scheduleStateSave()
 }
 
-// Adjust the editor base font size using keyboard shortcuts or menu commands.
+// Adjust the current text style using menu shortcuts (increase/decrease/reset).
 function updateFontSize(direction) {
-  const editor = document.getElementById('notes')
+  const dropdown = document.getElementById('font-size-select')
+  const fallbackIndex = FONT_STYLES.findIndex(style => style.key === 'body')
+  const currentIndex = FONT_STYLES.findIndex(style => style.key === currentFontStyle)
+  let nextIndex = currentIndex >= 0 ? currentIndex : fallbackIndex
 
   if (direction === 'increase') {
-    currentFontSize = Math.min(currentFontSize + 2, 32)
+    nextIndex = Math.min(FONT_STYLES.length - 1, nextIndex + 1)
   } else if (direction === 'decrease') {
-    currentFontSize = Math.max(currentFontSize - 2, 12)
+    nextIndex = Math.max(0, nextIndex - 1)
   } else if (direction === 'reset') {
-    currentFontSize = 18
+    nextIndex = fallbackIndex
   }
 
-  editor.style.fontSize = currentFontSize + 'px'
+  const targetStyle = FONT_STYLES[nextIndex] || FONT_STYLES[fallbackIndex]
+  currentFontStyle = targetStyle.key
+
+  if (dropdown) {
+    dropdown.value = targetStyle.key
+  }
+
+  applyFontStyle(targetStyle)
 }
 
 // NEW: Text formatting helper functions
@@ -417,13 +454,52 @@ function insertListItem(listType) {
   updateToolbarStates()
 }
 
-// Apply an explicit font size span when users pick a size from the dropdown.
-function applyFontSize(size) {
+// Infer which predefined font style matches the current selection.
+function detectSelectionStyle() {
+  const editor = document.getElementById('notes')
+  const selection = window.getSelection()
+  if (!editor || !selection || selection.rangeCount === 0) return null
+
+  let node = selection.anchorNode
+  if (node && node.nodeType === Node.TEXT_NODE) {
+    node = node.parentElement
+  }
+
+  while (node && node !== editor) {
+    if (node.dataset && node.dataset.fontStyle) {
+      return node.dataset.fontStyle
+    }
+    node = node.parentElement
+  }
+
+  // If the caret is directly inside the editor with no styled wrapper, stick with the current style.
+  if (node === editor) {
+    return currentFontStyle
+  }
+
+  // Fallback: map computed font size to the nearest predefined style.
+  const rangeNode = selection.anchorNode?.parentElement || editor
+  const computedSize = parseFloat(window.getComputedStyle(rangeNode).fontSize)
+  if (Number.isNaN(computedSize)) return null
+
+  let closest = FONT_STYLES[0]
+  let smallestDiff = Math.abs(computedSize - closest.size)
+  FONT_STYLES.forEach(style => {
+    const diff = Math.abs(computedSize - style.size)
+    if (diff < smallestDiff) {
+      closest = style
+      smallestDiff = diff
+    }
+  })
+
+  return closest?.key || null
+}
+
+// Apply an explicit font style span when users pick a style from the dropdown.
+function applyFontStyle(style) {
   const editor = document.getElementById('notes')
   editor.focus()
-  
-  // Create a span with the font size
-  const fontHTML = `<span style="font-size: ${size}px;">`
+  const { size, lineHeight, key, weight } = style
   
   // Check if we have selected text
   const selection = window.getSelection()
@@ -432,6 +508,9 @@ function applyFontSize(size) {
     const range = selection.getRangeAt(0)
     const span = document.createElement('span')
     span.style.fontSize = size + 'px'
+    span.style.lineHeight = lineHeight
+    span.style.fontWeight = weight
+    span.dataset.fontStyle = key
     
     try {
       span.appendChild(range.extractContents())
@@ -447,21 +526,27 @@ function applyFontSize(size) {
       console.log('Font size application failed:', e)
     }
   } else {
-    // No selection - set font size for future typing
-    document.execCommand('fontSize', false, '7') // Use size 7 as placeholder
-    
-    // Find the font elements and replace with our size
-    const fontElements = editor.querySelectorAll('font[size="7"]')
-    fontElements.forEach(el => {
-      const span = document.createElement('span')
-      span.style.fontSize = size + 'px'
-      span.innerHTML = el.innerHTML || '&nbsp;'
-      el.parentNode.replaceChild(span, el)
-    })
+    // No selection - insert a caret span so future typing uses the chosen style.
+    const range = selection.getRangeAt(0)
+    const span = document.createElement('span')
+    span.style.fontSize = size + 'px'
+    span.style.lineHeight = lineHeight
+    span.style.fontWeight = weight
+    span.dataset.fontStyle = key
+    span.innerHTML = '\u200b'
+    range.insertNode(span)
+    selection.removeAllRanges()
+    const newRange = document.createRange()
+    newRange.setStart(span.firstChild, 1)
+    newRange.collapse(true)
+    selection.addRange(newRange)
   }
   
   // Trigger save
   editor.dispatchEvent(new Event('input'))
+
+  // Refresh toolbar selection immediately after applying the style.
+  updateToolbarStates()
 }
 
 // Reflect the current selection's formatting by toggling toolbar button active states.
@@ -472,6 +557,7 @@ function updateToolbarStates() {
   const underlineBtn = document.getElementById('underline-btn')
   const bulletBtn = document.getElementById('bullet-btn')
   const numberBtn = document.getElementById('number-btn')
+  const fontDropdown = document.getElementById('font-size-select')
   
   // Use browser's queryCommandState to check formatting
   boldBtn.classList.toggle('active', document.queryCommandState('bold'))
@@ -479,23 +565,30 @@ function updateToolbarStates() {
   underlineBtn.classList.toggle('active', document.queryCommandState('underline'))
   bulletBtn.classList.toggle('active', document.queryCommandState('insertUnorderedList'))
   numberBtn.classList.toggle('active', document.queryCommandState('insertOrderedList'))
+
+  // Reflect current font style in the dropdown based on the selection.
+  const activeStyleKey = detectSelectionStyle()
+  if (fontDropdown) {
+    if (activeStyleKey) {
+      fontDropdown.value = activeStyleKey
+      currentFontStyle = activeStyleKey
+    } else if (!fontDropdown.value) {
+      fontDropdown.value = currentFontStyle
+    }
+  }
 }
-// Fallback helper that maps pixel sizes to document.execCommand's 1-7 scale.
-function setFontSize(size) {
-  const editor = document.getElementById('notes')
-  editor.focus()
-  
-  // Convert pixel size to execCommand scale (1-7)
-  let commandSize
-  if (size <= 12) commandSize = 1
-  else if (size <= 14) commandSize = 2  
-  else if (size <= 16) commandSize = 3
-  else if (size <= 18) commandSize = 4
-  else if (size <= 24) commandSize = 5
-  else if (size <= 32) commandSize = 6
-  else commandSize = 7
-  
-  document.execCommand('fontSize', false, commandSize)
+// Map dropdown selections to predefined font sizes.
+function setFontSize(styleKey) {
+  const dropdown = document.getElementById('font-size-select')
+  const style = FONT_STYLES.find(entry => entry.key === styleKey) || FONT_STYLES[0]
+
+  currentFontStyle = style.key
+  if (dropdown && dropdown.value !== style.key) {
+    dropdown.value = style.key
+  }
+
+  applyFontStyle(style)
+  updateToolbarStates()
 }
 
 // Adjust UI transparency as opacity changes from the slider, menu, or tray.
@@ -544,10 +637,12 @@ function updateOpacity(value) {
   // If opacity is very low, enhance text readability
   if (value < 0.4) {
     editor.style.fontWeight = '400'
-    editor.style.textShadow = '0 0 2px rgba(255,255,255,0.8)'
+    editor.style.textShadow = 'none'
+    editor.style.color = 'rgba(0, 0, 0, 0.92)'
   } else {
     editor.style.fontWeight = 'normal'
     editor.style.textShadow = 'none'
+    editor.style.color = 'var(--text-primary)'
   }
 
   // Update the display
@@ -559,7 +654,7 @@ function updateOpacity(value) {
 // Expand or collapse the sidebar while optionally persisting the preference.
 function applySidebarState(collapsed, { persist = false, suppressAnimation = false } = {}) {
   const body = document.body
-  const toggle = document.getElementById('sidebar-toggle')
+  const toggle = document.getElementById('toolbar-sidebar-toggle')
 
   if (!body) return
 
@@ -575,8 +670,8 @@ function applySidebarState(collapsed, { persist = false, suppressAnimation = fal
   if (toggle) {
     toggle.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true')
     toggle.setAttribute('aria-label', isCollapsed ? 'Show sidebar' : 'Hide sidebar')
-    const hint = sidebarToggleShortcutHint
-    toggle.title = isCollapsed ? `Show sidebar (${hint})` : `Hide sidebar (${hint})`
+    toggle.title = isCollapsed ? 'Show sidebar' : 'Hide sidebar'
+    toggle.classList.toggle('active', !isCollapsed)
   }
 
   if (persist && window.api.saveSidebarState) {
@@ -608,7 +703,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const opacitySlider = document.getElementById('opacity-slider')
   const toolbarWrapper = document.getElementById('toolbar-wrapper')
   const toolbarToggle = document.getElementById('toolbar-toggle')
-  const sidebarToggle = document.getElementById('sidebar-toggle')
+  const sidebarToggle = document.getElementById('toolbar-sidebar-toggle')
   const fontSizeDropdown = document.getElementById('font-size-select')
   const isMac = navigator.platform.toUpperCase().includes('MAC')
 
@@ -637,11 +732,20 @@ window.addEventListener('DOMContentLoaded', async () => {
     opacitySlider.style.background = 'linear-gradient(to right, var(--blue-primary) 0%, var(--blue-primary) 100%, var(--bg-tertiary) 100%, var(--bg-tertiary) 100%)'
   }
 
+  if (fontSizeDropdown) {
+    fontSizeDropdown.value = currentFontStyle
+  }
+
   // Restore persisted state (notes array, active note, sidebar, etc.).
   const loadedState = await window.api.loadNotes()
   const preparedState = prepareNotes(loadedState?.notes)
   notes = preparedState.notes
   let stateChanged = preparedState.mutated
+
+  const hasExistingContent = notes.some(note => {
+    const text = (note.content || '').replace(/<[^>]*>/g, '').trim()
+    return text.length > 0
+  })
 
   const privacyValue = typeof loadedState?.privacy === 'boolean' ? loadedState.privacy : true
   if (privacyCheckbox) {
@@ -665,9 +769,27 @@ window.addEventListener('DOMContentLoaded', async () => {
     stateChanged = true
   }
 
+  let launchBlankNoteId = null
+
+  if (hasExistingContent) {
+    const now = new Date().toISOString()
+    const blankNote = {
+      id: generateNoteId(),
+      content: '',
+      createdAt: now,
+      updatedAt: now,
+      title: FALLBACK_NOTE_TITLE
+    }
+    notes.unshift(blankNote)
+    launchBlankNoteId = blankNote.id
+    stateChanged = true
+  }
+
   sortNotesByUpdated()
 
-  if (loadedState?.activeNoteId && notes.some(note => note.id === loadedState.activeNoteId)) {
+  if (launchBlankNoteId) {
+    activeNoteId = launchBlankNoteId
+  } else if (loadedState?.activeNoteId && notes.some(note => note.id === loadedState.activeNoteId)) {
     activeNoteId = loadedState.activeNoteId
   } else {
     activeNoteId = notes[0]?.id ?? null
@@ -677,6 +799,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (editor) {
     const activeNote = getActiveNote()
     editor.innerHTML = activeNote ? activeNote.content : ''
+    updateHeaderTitle(activeNote)
   }
 
   renderNotesList()
@@ -832,6 +955,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           if (editor) {
             const activeNote = getActiveNote()
             editor.innerHTML = activeNote ? activeNote.content : ''
+            updateHeaderTitle(activeNote)
           }
 
           renderNotesList()
@@ -1000,5 +1124,14 @@ window.api.onPrivacyChanged((e, on) => {
 
 // Show or hide the privacy badge text based on the active state.
 function updatePrivacyBadge(on) {
-  document.querySelector('.privacy-badge').style.display = on ? 'inline-block' : 'none';
+  const badge = document.querySelector('.privacy-badge')
+  const label = document.querySelector('.privacy-label')
+
+  if (badge) {
+    badge.style.display = on ? 'inline-block' : 'none'
+  }
+
+  if (label) {
+    label.style.display = on ? 'none' : 'inline-block'
+  }
 }

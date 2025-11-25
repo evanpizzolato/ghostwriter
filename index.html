@@ -57,13 +57,19 @@
       flex-direction: column;
       border-radius: 10px;
       overflow: hidden;
+      /* specific to MacOS/iOS rendering engines */
+  -webkit-font-smoothing: antialiased;
+  
+  /* specific to Firefox */
+  -moz-osx-font-smoothing: grayscale;
     }
 
     .header {
       background-color: rgba(248, 249, 250, 1);
       /* Fully opaque */
       border-bottom: 1px solid var(--bg-tertiary);
-      padding: 4px 16px;
+      padding: 0px 12px;
+      height: 40px;
       -webkit-app-region: drag;
       display: flex;
       align-items: center;
@@ -80,43 +86,53 @@
     .header-left {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-left: 56px;
+      gap: 8px;
+      margin-left: 72px;
+      height: 100%;
+      transform: translateY(-1px);
     }
 
-    body.window-fullscreen .header-left {
-      margin-left: 16px;
-    }
-
-    .sidebar-toggle {
+    .header-sidebar-toggle {
       -webkit-app-region: no-drag;
-      width: 30px;
-      height: 30px;
-      border: none;
-      border-radius: 6px;
-      background: transparent;
+      width: 28px;
+      height: 28px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
       cursor: pointer;
-      transition: background-color 0.2s ease;
+      padding: 0;
+      transition: background-color 0.15s ease;
     }
 
-    .sidebar-toggle:hover {
-      background-color: rgba(0, 0, 0, 0.08);
+    .header-sidebar-toggle:hover {
+      background-color: rgba(0, 0, 0, 0.06);
     }
 
-    .sidebar-toggle:focus-visible {
-      outline: 2px solid var(--blue-primary);
-      outline-offset: 2px;
+    .header-sidebar-toggle:focus-visible {
+      outline: 2px solid #0066F3;
+      outline-offset: 1px;
     }
 
-    .sidebar-toggle-icon {
-      transition: transform 0.24s ease;
+    .header-sidebar-toggle .sidebar-toggle-icon {
+      width: 16px;
+      height: 16px;
     }
 
-    body:not(.sidebar-collapsed) .sidebar-toggle-icon {
-      transform: rotate(180deg);
+    .note-title-display {
+      font-size: 13px;
+      font-weight: 400;
+      height: 16px;
+      padding-top: 2px;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      -webkit-app-region: drag;
+      line-height: 1;
+      max-width: 240px;
     }
 
     .app-layout {
@@ -391,6 +407,18 @@
       /* box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2); */
     }
 
+    .privacy-label {
+      border: none;
+      color: #707880;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 600;
+      display: inline-block;
+      text-transform: uppercase;
+      display: none;
+    }
+
     /* ===== privacy toggle switch ===== */
     .privacy-switch {
       position: relative;
@@ -505,14 +533,14 @@
       gap: 1px;
       border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       -webkit-app-region: no-drag;
-      background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
+      background: white
     }
 
     .toolbar-wrapper::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
+      background: white;
       z-index: -1;
     }
 
@@ -543,8 +571,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
-      border-right: 1px solid white;
+      border-right: 1px solid rgb(241, 241, 241);
       border-radius: 0px;
       padding: 0 8px;
       min-height: 32px;
@@ -596,24 +623,30 @@
       display: flex;
       align-items: center;
       gap: 1px;
-      background: #ffffff;
       padding: 0;
-      border-radius: 4px;
       overflow: hidden;
     }
 
+    .toolbar-buttons--sidebar {
+      border-right: 1px solid white;
+      margin-right: 4px;
+    }
+
     .toolbar-btn {
-      width: 34px;
+      width: 32px;
       height: 32px;
       border: none;
-      background: #F8F9FA;
+      background: #FFFFFF;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       padding: 0;
       transition: background-color 0.1s ease;
-      background: linear-gradient(180deg, #F8F9FA 0%, #F3F4F5 100%);
+    }
+
+    .toolbar-btn.active {
+      background: #e9ecef;
     }
 
     /* .toolbar-btn:first-child {
@@ -634,13 +667,13 @@
       background: #E6E7E8;
     }
     .toolbar-btn:hover {
-      background-color: #EFEFEF;
+      background-color: #f3f3f3;
     }
 
     .toolbar-btn svg {
       pointer-events: none;
     }
-
+/* 
     .toolbar-toggle {
       display: flex;
       align-items: center;
@@ -658,7 +691,7 @@
 
     .toolbar-toggle svg {
       display: block;
-    }
+    } */
 
     .toolbar-wrapper.toolbar-hidden .toolbar-toggle {
       padding: 0;
@@ -687,7 +720,7 @@
       color: var(--text-primary);
       border: none;
       padding: 12px 24px;
-      font-size: 14px;
+      font-size: 16px;
       line-height: 1.5;
       width: 100%;
       height: 100%;
@@ -821,20 +854,18 @@
   <!-- Custom title bar row -->
   <div class="header">
     <div class="header-left">
-      <!-- Sidebar toggle button -->
-      <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Show sidebar" aria-expanded="false"
-        aria-controls="app-sidebar">
-        <svg class="sidebar-toggle-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"
-          fill="none" aria-hidden="true">
-          <line x1="4.25" y1="4" x2="4.25" y2="14" stroke="#3A3A3C" stroke-width="1.5" stroke-linecap="round" />
-          <path d="M10.25 5.75L13.5 9L10.25 12.25" stroke="#3A3A3C" stroke-width="1.5" stroke-linecap="round"
-            stroke-linejoin="round" />
+      <button class="header-sidebar-toggle" id="toolbar-sidebar-toggle" title="Show sidebar" aria-label="Show sidebar">
+        <svg class="sidebar-toggle-icon feather feather-sidebar" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <line x1="9" y1="3" x2="9" y2="21"/>
         </svg>
       </button>
+      <span class="note-title-display" id="note-title-display">Untitled</span>
     </div>
     <div class="badge-container">
       <!-- Privacy badge + toggle -->
       <span class="privacy-badge">PRIVACY MODE</span>
+      <span class="privacy-label">Privacy Mode</span>
       <label class="privacy-switch">
         <input type="checkbox" id="privacy-checkbox" checked />
         <span class="slider round" style="height: 16px;"></span>
@@ -887,65 +918,61 @@
         <div class="toolbar-wrapper" id="toolbar-wrapper">
           <div class="toolbar-content">
             <div class="font-size-control">
-          <label for="font-size-select">Font size</label>
-          <div class="font-size-select-wrapper">
-            <select id="font-size-select" title="Font Size">
-              <option value="12">12</option>
-              <option value="14">14</option>
-              <option value="16" selected>16</option>
-              <option value="18">18</option>
-              <option value="20">20</option>
-              <option value="24">24</option>
-              <option value="28">28</option>
-              <option value="32">32</option>
-              <option value="36">36</option>
-            </select>
-          </div>
-        </div>
+              <div class="font-size-select-wrapper">
+                <select id="font-size-select" title="Font Size">
+                  <option value="heading1">Heading 1</option>
+                  <option value="heading2">Heading 2</option>
+                  <option value="heading3">Heading 3</option>
+                  <option value="heading4">Heading 4</option>
+                  <option value="body" selected>Body</option>
+                </select>
+              </div>
+            </div>
 
         <div class="toolbar-buttons">
           <button class="toolbar-btn" id="bold-btn" title="Bold (Cmd+B)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
-              <path d="M5 9.99992H12.5C13.3841 9.99992 14.2319 10.3511 14.857 10.9762C15.4821 11.6014 15.8333 12.4492 15.8333 13.3333C15.8333 14.2173 15.4821 15.0652 14.857 15.6903C14.2319 16.3154 13.3841 16.6666 12.5 16.6666H5.83333C5.61232 16.6666 5.40036 16.5788 5.24408 16.4225C5.0878 16.2662 5 16.0543 5 15.8333V4.16659C5 3.94557 5.0878 3.73361 5.24408 3.57733C5.40036 3.42105 5.61232 3.33325 5.83333 3.33325H11.6667C12.5507 3.33325 13.3986 3.68444 14.0237 4.30956C14.6488 4.93468 15 5.78253 15 6.66659C15 7.55064 14.6488 8.39849 14.0237 9.02361C13.3986 9.64873 12.5507 9.99992 11.6667 9.99992" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            <svg class="feather feather-bold" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
+              <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
             </svg>
           </button>
           <button class="toolbar-btn" id="italic-btn" title="Italic (Cmd+I)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
-              <path d="M15.8333 3.33325H8.33325" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M11.6667 16.6667H4.16675" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M12.5 3.33325L7.5 16.6666" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            <svg class="feather feather-italic" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="4" x2="10" y2="4" />
+              <line x1="14" y1="20" x2="5" y2="20" />
+              <line x1="15" y1="4" x2="9" y2="20" />
             </svg>
           </button>
           <button class="toolbar-btn" id="underline-btn" title="Underline (Cmd+U)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none">
               <path d="M5 3.33325V8.33325C5 9.65933 5.52678 10.9311 6.46447 11.8688C7.40215 12.8065 8.67392 13.3333 10 13.3333C11.3261 13.3333 12.5979 12.8065 13.5355 11.8688C14.4732 10.9311 15 9.65933 15 8.33325V3.33325" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M3.33325 16.6667H16.6666" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3.33325 16.6667H16.6666" stroke="black" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
           <button class="toolbar-btn" id="bullet-btn" title="Bullet List (Cmd+L)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
-              <path d="M2.5 4.16675H2.50833" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M2.5 10H2.50833" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M2.5 15.8333H2.50833" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M6.66675 4.16675H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M6.66675 10H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M6.66675 15.8333H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            <svg class="feather feather-list" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
             </svg>
           </button>
           <button class="toolbar-btn" id="number-btn" title="Numbered List (Cmd+D)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="none">
-              <path d="M9.16675 4.16675H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M9.16675 10H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M9.16675 15.8333H17.5001" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M3.33325 3.33325H4.16659V7.49992" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M3.33325 7.5H4.99992" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none">
+              <path d="M9.16675 4.16675H17.5001" stroke="black" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M9.16675 10H17.5001" stroke="black" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M9.16675 15.8333H17.5001" stroke="black" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3.33325 3.33325H4.16659V7.49992" stroke="black" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M3.33325 7.5H4.99992" stroke="black" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M5.41659 16.6666H2.83325C2.83325 15.8333 4.99992 15.0624 4.99992 13.7499C4.99995 13.4987 4.92426 13.2532 4.78271 13.0456C4.64117 12.838 4.44034 12.6779 4.20643 12.5861C3.97252 12.4943 3.71638 12.4752 3.47143 12.5312C3.22648 12.5872 3.00408 12.7157 2.83325 12.8999" stroke="black" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
             </div>
           </div>
 
-          <button class="toolbar-toggle" id="toolbar-toggle" type="button">
+          <!-- <button class="toolbar-toggle" id="toolbar-toggle" type="button">
             <span class="toggle-label">Hide toolbar</span>
             <span class="toggle-icon toggle-icon--hide" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -957,7 +984,7 @@
             <path d="M7 8.75C7.9665 8.75 8.75 7.9665 8.75 7C8.75 6.0335 7.9665 5.25 7 5.25C6.0335 5.25 5.25 6.0335 5.25 7C5.25 7.9665 6.0335 8.75 7 8.75Z" stroke="#0066F3" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </span>
-          </button>
+          </button> -->
         </div>
 
         <div id="notes-wrapper">

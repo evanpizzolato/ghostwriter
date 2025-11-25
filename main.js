@@ -114,7 +114,7 @@ function createTray() {
   tray.setToolTip('Presenter Notes')
 
   //Show Inspect Element devtool
-  //mainWindow.webContents.toggleDevTools();
+  mainWindow.webContents.toggleDevTools();
   
   // Create tray menu for show/hide, opacity, and font size shortcuts.
   const trayMenu = Menu.buildFromTemplate([

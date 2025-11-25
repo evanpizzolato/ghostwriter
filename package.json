@@ -1,19 +1,21 @@
 {
   "name": "presenter-notes",
-  "version": "0.1.0",
-  "description": "Privacy-focused presenter notes that stay hidden from screenshots and screen shares",
+  "version": "1.0.0",
+  "description": "Privacy-focused notes that stay hidden from screenshots and screen shares",
   "main": "main.js",
   "scripts": {
     "start": "electron main.js",
     "dist": "electron-builder",
-    "dist-mac": "electron-builder --mac"
+    "dist-mac": "electron-builder --mac",
+    "build": "electron-builder --publish=never",
+    "pack": "electron-builder --dir"
   },
   "devDependencies": {
     "electron": "^latest",
     "electron-builder": "^latest"
   },
   "build": {
-    "appId": "com.yourname.presenter-notes",
+    "appId": "com.evanpizzolato.presenter-notes",
     "productName": "Presenter Notes",
     "directories": {
       "output": "dist"
@@ -24,6 +26,8 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "darkModeSupport": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "target": [
         {
           "target": "dmg",
