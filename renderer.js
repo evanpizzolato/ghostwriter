@@ -3,6 +3,7 @@
 const SAVE_DEBOUNCE_MS = 500          // Delay before writing to disk after typing stops.
 const NOTE_TITLE_MAX_LENGTH = 60      // Number of characters we use for a sidebar title preview.
 const FALLBACK_NOTE_TITLE = 'Untitled'// Placeholder title shown when a note has no content yet.
+const GUIDE_NOTE_ID = 'ghostwriter-guide-note'
 // Inline SVG used for the delete button beside each note in the sidebar.
 const TRASH_ICON_SVG = `
   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
@@ -26,6 +27,47 @@ const FONT_STYLE_LOOKUP = FONT_STYLES.reduce((map, style) => {
   return map
 }, {})
 const BLOCK_TAGS = new Set(['DIV', 'P', 'LI'])
+const DEFAULT_GUIDE_CONTENT = `
+<div data-font-style="heading1" style="margin-bottom: 16px; font-size:32px;line-height:1.2;font-weight:500;">Ghostwriter quickstart</div>
+<div data-font-style="body" style="margin-bottom: 16px; font-size:16px;line-height:1.28;font-weight:400;">Ghostwriter is a lightweight, always-on-top notes window for Mac. Notes save automatically and stay out of screenshots when Privacy is on.</div>
+<div data-font-style="heading2" style="margin-bottom: 16px; font-size:26px;line-height:1.2;font-weight:500;">Basics</div>
+<ul style="margin-bottom: 16px;">
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Type in the editor on the right; everything auto-saves.</li>
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Notes are listed on the left; click a title to switch.</li>
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Use the pencil icon to create a new blank note.</li>
+</ul>
+<div data-font-style="heading2" style="margin-bottom: 16px; font-size:26px;line-height:1.2;font-weight:500;">Text styling</div>
+<div data-font-style="body" style="margin-bottom: 16px; font-size:16px;line-height:1.24;font-weight:400;">Choose Body or Heading from the dropdown. Toolbar buttons mirror these shortcuts:</div>
+<ul style="margin-bottom: 16px;">
+  <li data-font-style="body" style="font-size:16px;line-height:1.2;font-weight:400;">Bold: Cmd+B</li>
+  <li data-font-style="body" style="font-size:16px;line-height:1.2;font-weight:400;">Italic: Cmd+I</li>
+  <li data-font-style="body" style="font-size:16px;line-height:1.2;font-weight:400;">Underline: Cmd+U</li>
+  <li data-font-style="body" style="font-size:16px;line-height:1.2;font-weight:400;">Bulleted list: Cmd+L</li>
+  <li data-font-style="body" style="font-size:16px;line-height:1.2;font-weight:400;">Numbered list: Cmd+D</li>
+</ul>
+<div data-font-style="heading2" style="margin-bottom: 16px; font-size:26px;line-height:1.2;font-weight:500;">Sidebar & notes</div>
+<ul style="margin-bottom: 16px;">
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Use the sidebar toggle (top left) to show or hide the list.</li>
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Active note shows in blue; timestamps update when you edit.</li>
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Delete a note with the trash icon beside its title.</li>
+</ul>
+<div data-font-style="heading2" style="margin-bottom: 16px; font-size:26px;line-height:1.2;font-weight:500;">Privacy & window</div>
+<ul style="margin-bottom: 16px;">
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Privacy switch hides content from screenshots.</li>
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Opacity slider (bottom) adjusts transparency without hiding text.</li>
+</ul>
+<div data-font-style="heading2" style="margin-bottom: 16px; font-size:26px;line-height:1.2;font-weight:500;">Shortcuts</div>
+<ul style="margin-bottom: 16px;">
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Toggle sidebar: Option+Cmd+S</li>
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Undo / Redo: Cmd+Z / Shift+Cmd+Z</li>
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Formatting: Cmd+B, Cmd+I, Cmd+U, Cmd+L, Cmd+D</li>
+</ul>
+<div data-font-style="heading3" style="margin-bottom: 16px; font-size:22px;line-height:1.2;font-weight:500;">Tips</div>
+<ul style="margin-bottom: 16px;">
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Switching notes is an easy way to confirm your work saved.</li>
+  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Use headings to break sections and lists for talking points.</li>
+</ul>
+`
 
 // Generate a unique identifier for new notes, using crypto if available.
 const generateNoteId = () => {
@@ -194,6 +236,16 @@ function parseTimestamp(value) {
 // Keep the in-memory notes sorted by most recently updated first.
 function sortNotesByUpdated() {
   notes.sort((a, b) => parseTimestamp(b.updatedAt) - parseTimestamp(a.updatedAt))
+}
+
+function buildGuideNote(timestamp) {
+  return {
+    id: GUIDE_NOTE_ID,
+    content: DEFAULT_GUIDE_CONTENT,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    title: deriveTitleFromContent(DEFAULT_GUIDE_CONTENT)
+  }
 }
 
 // Return the note currently shown in the editor, or null if nothing is available.
@@ -843,11 +895,41 @@ window.addEventListener('DOMContentLoaded', async () => {
   const preparedState = prepareNotes(loadedState?.notes)
   notes = preparedState.notes
   let stateChanged = preparedState.mutated
-
+  let insertedGuideNote = false
   const hasExistingContent = notes.some(note => {
     const text = (note.content || '').replace(/<[^>]*>/g, '').trim()
     return text.length > 0
   })
+
+  if (!notes.length) {
+    const now = new Date().toISOString()
+    const guideNote = buildGuideNote(now)
+    const starterNote = {
+      id: generateNoteId(),
+      content: '',
+      createdAt: now,
+      updatedAt: now,
+      title: FALLBACK_NOTE_TITLE
+    }
+    notes.push(guideNote, starterNote)
+    activeNoteId = guideNote.id
+    insertedGuideNote = true
+    stateChanged = true
+  }
+
+  if (!notes.some(note => note.id === GUIDE_NOTE_ID)) {
+    const now = new Date().toISOString()
+    notes.unshift(buildGuideNote(now))
+    insertedGuideNote = true
+    stateChanged = true
+  } else {
+    const guideIndex = notes.findIndex(note => note.id === GUIDE_NOTE_ID)
+    if (guideIndex !== -1 && notes[guideIndex].content !== DEFAULT_GUIDE_CONTENT) {
+      const updated = { ...notes[guideIndex], content: DEFAULT_GUIDE_CONTENT }
+      notes.splice(guideIndex, 1, updated)
+      stateChanged = true
+    }
+  }
 
   const privacyValue = typeof loadedState?.privacy === 'boolean' ? loadedState.privacy : true
   if (privacyCheckbox) {
@@ -858,22 +940,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   const initialSidebarCollapsed = typeof loadedState?.sidebarCollapsed === 'boolean' ? loadedState.sidebarCollapsed : true
   applySidebarState(initialSidebarCollapsed, { suppressAnimation: true })
 
-  if (!notes.length) {
-    // Ensure at least one note exists so the editor always has somewhere to write.
-    const now = new Date().toISOString()
-    notes.push({
-      id: generateNoteId(),
-      content: '',
-      createdAt: now,
-      updatedAt: now,
-      title: FALLBACK_NOTE_TITLE
-    })
-    stateChanged = true
-  }
-
   let launchBlankNoteId = null
 
-  if (hasExistingContent) {
+  if (hasExistingContent && !insertedGuideNote) {
     const now = new Date().toISOString()
     const blankNote = {
       id: generateNoteId(),
@@ -893,9 +962,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     activeNoteId = launchBlankNoteId
   } else if (loadedState?.activeNoteId && notes.some(note => note.id === loadedState.activeNoteId)) {
     activeNoteId = loadedState.activeNoteId
-  } else {
+  } else if (insertedGuideNote && !hasExistingContent) {
+    const guide = notes.find(note => note.id === GUIDE_NOTE_ID)
+    activeNoteId = guide ? guide.id : (notes[0]?.id ?? null)
+  } else if (!activeNoteId) {
     activeNoteId = notes[0]?.id ?? null
     stateChanged = true
+  } else {
+    activeNoteId = activeNoteId || (notes[0]?.id ?? null)
   }
 
   if (editor) {
