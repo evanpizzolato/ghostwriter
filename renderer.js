@@ -21,6 +21,11 @@ const FONT_STYLES = [
   { key: 'heading2', label: 'Heading 2', size: 26, lineHeight: 1.2, weight: 500 },
   { key: 'heading1', label: 'Heading 1', size: 32, lineHeight: 1.2, weight: 500 }
 ]
+const FONT_STYLE_LOOKUP = FONT_STYLES.reduce((map, style) => {
+  map[style.key] = style
+  return map
+}, {})
+const BLOCK_TAGS = new Set(['DIV', 'P', 'LI'])
 
 // Generate a unique identifier for new notes, using crypto if available.
 const generateNoteId = () => {
@@ -293,6 +298,7 @@ function renderNotesList() {
     selectButton.textContent = displayTitle
     selectButton.dataset.noteId = note.id
     selectButton.title = displayTitle
+    selectButton.setAttribute('aria-label', displayTitle)
 
     if (note.id === activeNoteId) {
       selectButton.setAttribute('aria-current', 'true')
@@ -348,6 +354,7 @@ function selectNote(noteId, { focus = true } = {}) {
 
   activeNoteId = noteId
   editor.innerHTML = targetNote.content || ''
+  normalizeEditorStructure(editor)
   updateHeaderTitle(targetNote)
 
   renderNotesList()
@@ -414,6 +421,7 @@ function deleteNote(noteId) {
     activeNoteId = notes[0].id
     if (editor) {
       editor.innerHTML = notes[0].content || ''
+      normalizeEditorStructure(editor)
       updateToolbarStates()
       updateHeaderTitle(notes[0])
       focusEditorAtEnd()
@@ -497,32 +505,96 @@ function insertListItem(listType) {
   updateToolbarStates()
 }
 
+function isBlockElement(node) {
+  return !!node && node.nodeType === Node.ELEMENT_NODE && BLOCK_TAGS.has(node.tagName)
+}
+
+function findNearestBlock(node, root) {
+  let current = node
+  while (current && current !== root) {
+    if (isBlockElement(current)) return current
+    current = current.parentNode
+  }
+  return null
+}
+
+function collectBlocksFromRange(range, root) {
+  const blocks = []
+  const hasIntersects = typeof range.intersectsNode === 'function'
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
+    acceptNode(node) {
+      if (!isBlockElement(node)) return NodeFilter.FILTER_SKIP
+      if (hasIntersects) {
+        return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
+      }
+
+      const nodeRange = document.createRange()
+      nodeRange.selectNodeContents(node)
+      const startsBeforeEnd = range.compareBoundaryPoints(Range.END_TO_START, nodeRange) > 0
+      const endsAfterStart = range.compareBoundaryPoints(Range.START_TO_END, nodeRange) < 0
+      return startsBeforeEnd && endsAfterStart ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
+    }
+  })
+
+  while (walker.nextNode()) {
+    blocks.push(walker.currentNode)
+  }
+
+  return blocks
+}
+
+function applyStyleToBlock(block, style) {
+  if (!block || !style) return
+
+  block.dataset.fontStyle = style.key
+  block.style.fontSize = `${style.size}px`
+  block.style.lineHeight = style.lineHeight
+  block.style.fontWeight = style.weight
+}
+
+// Clean up old inline spans so they don't stretch line height when switching styles.
+function normalizeEditorStructure(root = document.getElementById('notes')) {
+  if (!root) return
+
+  root.querySelectorAll('span[data-font-style]').forEach((span) => {
+    const styleKey = span.dataset.fontStyle
+    const style = FONT_STYLE_LOOKUP[styleKey]
+    const targetBlock = findNearestBlock(span, root)
+
+    if (style && targetBlock) {
+      applyStyleToBlock(targetBlock, style)
+    }
+
+    while (span.firstChild) {
+      span.parentNode.insertBefore(span.firstChild, span)
+    }
+    span.remove()
+  })
+
+  root.querySelectorAll('div, p, li').forEach((block) => {
+    block.childNodes.forEach((child) => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        child.textContent = child.textContent.replace(/\u200b+/g, '')
+      }
+    })
+  })
+}
+
 // Infer which predefined font style matches the current selection.
 function detectSelectionStyle() {
   const editor = document.getElementById('notes')
   const selection = window.getSelection()
   if (!editor || !selection || selection.rangeCount === 0) return null
 
-  let node = selection.anchorNode
-  if (node && node.nodeType === Node.TEXT_NODE) {
-    node = node.parentElement
+  const anchorBlock = findNearestBlock(selection.anchorNode, editor)
+  if (anchorBlock && anchorBlock.dataset.fontStyle) {
+    return anchorBlock.dataset.fontStyle
   }
 
-  while (node && node !== editor) {
-    if (node.dataset && node.dataset.fontStyle) {
-      return node.dataset.fontStyle
-    }
-    node = node.parentElement
-  }
-
-  // If the caret is directly inside the editor with no styled wrapper, stick with the current style.
-  if (node === editor) {
-    return currentFontStyle
-  }
+  if (!anchorBlock || anchorBlock === editor) return currentFontStyle
 
   // Fallback: map computed font size to the nearest predefined style.
-  const rangeNode = selection.anchorNode?.parentElement || editor
-  const computedSize = parseFloat(window.getComputedStyle(rangeNode).fontSize)
+  const computedSize = parseFloat(window.getComputedStyle(anchorBlock).fontSize)
   if (Number.isNaN(computedSize)) return null
 
   let closest = FONT_STYLES[0]
@@ -541,51 +613,38 @@ function detectSelectionStyle() {
 // Apply an explicit font style span when users pick a style from the dropdown.
 function applyFontStyle(style) {
   const editor = document.getElementById('notes')
+  if (!editor) return
   editor.focus()
-  const { size, lineHeight, key, weight } = style
-  
-  // Check if we have selected text
+
   const selection = window.getSelection()
-  if (selection.rangeCount > 0 && !selection.isCollapsed) {
-    // Text is selected - wrap it in a span
-    const range = selection.getRangeAt(0)
-    const span = document.createElement('span')
-    span.style.fontSize = size + 'px'
-    span.style.lineHeight = lineHeight
-    span.style.fontWeight = weight
-    span.dataset.fontStyle = key
-    
-    try {
-      span.appendChild(range.extractContents())
-      range.insertNode(span)
-      selection.removeAllRanges()
-      
-      // Place cursor after the span
+  if (!selection || selection.rangeCount === 0) return
+
+  const range = selection.getRangeAt(0)
+  const blocks = collectBlocksFromRange(range, editor)
+  let targetBlocks = blocks
+
+  if (!targetBlocks.length) {
+    const closest = findNearestBlock(range.startContainer, editor)
+    if (closest) {
+      targetBlocks = [closest]
+    } else {
+      const fallback = document.createElement('div')
+      fallback.innerHTML = '<br>'
+      editor.appendChild(fallback)
+      targetBlocks = [fallback]
+
       const newRange = document.createRange()
-      newRange.setStartAfter(span)
+      newRange.setStart(fallback, 0)
       newRange.collapse(true)
+      selection.removeAllRanges()
       selection.addRange(newRange)
-    } catch (e) {
-      console.log('Font size application failed:', e)
     }
-  } else {
-    // No selection - insert a caret span so future typing uses the chosen style.
-    const range = selection.getRangeAt(0)
-    const span = document.createElement('span')
-    span.style.fontSize = size + 'px'
-    span.style.lineHeight = lineHeight
-    span.style.fontWeight = weight
-    span.dataset.fontStyle = key
-    span.innerHTML = '\u200b'
-    range.insertNode(span)
-    selection.removeAllRanges()
-    const newRange = document.createRange()
-    newRange.setStart(span.firstChild, 1)
-    newRange.collapse(true)
-    selection.addRange(newRange)
   }
-  
+
+  targetBlocks.forEach((block) => applyStyleToBlock(block, style))
+
   // Trigger save
+  normalizeEditorStructure(editor)
   editor.dispatchEvent(new Event('input'))
 
   // Refresh toolbar selection immediately after applying the style.
@@ -842,6 +901,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (editor) {
     const activeNote = getActiveNote()
     editor.innerHTML = activeNote ? activeNote.content : ''
+    normalizeEditorStructure(editor)
     updateHeaderTitle(activeNote)
   }
 
@@ -879,7 +939,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   if (editor) {
     editor.addEventListener('input', (e) => {
-      updateActiveNoteContent(e.target.innerHTML)
+      updateActiveNoteContent(editor.innerHTML)
     })
 
     // Refresh toolbar state whenever the selection changes via typing or clicking.
@@ -892,6 +952,24 @@ window.addEventListener('DOMContentLoaded', async () => {
       if (!cmdKey) return
 
       switch (e.key.toLowerCase()) {
+        case 'z': {
+          // Support undo/redo shortcuts in the editor.
+          e.preventDefault()
+          if (e.shiftKey) {
+            // Cmd+Shift+Z on macOS, Ctrl+Shift+Z on Windows.
+            document.execCommand('redo')
+          } else {
+            document.execCommand('undo')
+          }
+          break
+        }
+        case 'y': {
+          if (isMac) break // mac uses Shift+Z for redo; let default behavior.
+          // Ctrl+Y redo on Windows.
+          e.preventDefault()
+          document.execCommand('redo')
+          break
+        }
         case 'b':
           e.preventDefault()
           insertTextFormat('bold')
@@ -1002,6 +1080,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           if (editor) {
             const activeNote = getActiveNote()
             editor.innerHTML = activeNote ? activeNote.content : ''
+            normalizeEditorStructure(editor)
             updateHeaderTitle(activeNote)
           }
 
@@ -1023,6 +1102,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
           if (editor) {
             editor.innerHTML = data.notes
+            normalizeEditorStructure(editor)
             updateActiveNoteContent(editor.innerHTML)
             focusEditorAtEnd()
           }
@@ -1042,6 +1122,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
         if (editor) {
           editor.innerHTML = content
+          normalizeEditorStructure(editor)
           updateActiveNoteContent(editor.innerHTML)
           focusEditorAtEnd()
         }
