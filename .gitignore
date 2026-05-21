@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+release/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor/OS
+.vscode/
+.idea/
+*.swp
+
+# Local env
+.env
+.env.local
+
+# Notarization / signing scratch
+*.zip
+notarize.log

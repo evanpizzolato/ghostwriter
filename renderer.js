@@ -6,21 +6,21 @@ const FALLBACK_NOTE_TITLE = 'Untitled'// Placeholder title shown when a note has
 const GUIDE_NOTE_ID = 'ghostwriter-guide-note'
 // Inline SVG used for the delete button beside each note in the sidebar.
 const TRASH_ICON_SVG = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
-    <polyline points="3 6 5 6 21 6"/>
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-    <line x1="10" y1="11" x2="10" y2="17"/>
-    <line x1="14" y1="11" x2="14" y2="17"/>
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 32 32" fill="currentColor" class="carbon carbon-trash-can">
+    <path d="M12 12H14V24H12z"/>
+    <path d="M18 12H20V24H18z"/>
+    <path d="M4,6V8H6V28a2,2,0,0,0,2,2H24a2,2,0,0,0,2-2V8h2V6ZM8,28V8H24V28Z"/>
+    <path d="M12 2H20V4H12z"/>
   </svg>
 `
 
 // Predefined text styles exposed in the toolbar dropdown.
 const FONT_STYLES = [
-  { key: 'body', label: 'Body', size: 16, lineHeight: 1.5, weight: 400 },
-  { key: 'heading4', label: 'Heading 4', size: 18, lineHeight: 1.2, weight: 500 },
-  { key: 'heading3', label: 'Heading 3', size: 22, lineHeight: 1.2, weight: 500 },
-  { key: 'heading2', label: 'Heading 2', size: 26, lineHeight: 1.2, weight: 500 },
-  { key: 'heading1', label: 'Heading 1', size: 32, lineHeight: 1.2, weight: 500 }
+  { key: 'body', label: 'Body', size: 13, lineHeight: 1.5, weight: 400 },
+  { key: 'heading4', label: 'Heading 4', size: 15, lineHeight: 1.2, weight: 500 },
+  { key: 'heading3', label: 'Heading 3', size: 18, lineHeight: 1.2, weight: 500 },
+  { key: 'heading2', label: 'Heading 2', size: 20, lineHeight: 1.2, weight: 500 },
+  { key: 'heading1', label: 'Heading 1', size: 24, lineHeight: 1.2, weight: 600 }
 ]
 const FONT_STYLE_LOOKUP = FONT_STYLES.reduce((map, style) => {
   map[style.key] = style
@@ -28,44 +28,44 @@ const FONT_STYLE_LOOKUP = FONT_STYLES.reduce((map, style) => {
 }, {})
 const BLOCK_TAGS = new Set(['DIV', 'P', 'LI'])
 const DEFAULT_GUIDE_CONTENT = `
-<div data-font-style="heading1" style="margin-bottom: 16px; font-size:32px;line-height:1.2;font-weight:500;">Ghostwriter quickstart</div>
-<div data-font-style="body" style="margin-bottom: 16px; font-size:16px;line-height:1.28;font-weight:400;">Ghostwriter is a lightweight, always-on-top notes window for Mac. Notes save automatically and stay out of screenshots when Privacy is on.</div>
-<div data-font-style="heading2" style="margin-bottom: 16px; font-size:26px;line-height:1.2;font-weight:500;">Basics</div>
+<div data-font-style="heading1" style="margin-bottom: 16px; font-size:24px;line-height:1.2;font-weight:600;">Ghostwriter quickstart</div>
+<div data-font-style="body" style="margin-bottom: 16px; font-size:13px;line-height:1.5;font-weight:400;">Ghostwriter is a lightweight, always-on-top notes window for Mac. Notes save automatically and stay out of screenshots when Privacy is on.</div>
+<div data-font-style="heading2" style="margin-bottom: 16px; font-size:20px;line-height:1.2;font-weight:500;">Basics</div>
 <ul style="margin-bottom: 16px;">
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Type in the editor on the right; everything auto-saves.</li>
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Notes are listed on the left; click a title to switch.</li>
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Use the pencil icon to create a new blank note.</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Type in the editor on the right; everything auto-saves.</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Notes are listed on the left; click a title to switch.</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Use the pencil icon to create a new blank note.</li>
 </ul>
-<div data-font-style="heading2" style="margin-bottom: 16px; font-size:26px;line-height:1.2;font-weight:500;">Text styling</div>
-<div data-font-style="body" style="margin-bottom: 16px; font-size:16px;line-height:1.24;font-weight:400;">Choose Body or Heading from the dropdown. Toolbar buttons mirror these shortcuts:</div>
+<div data-font-style="heading2" style="margin-bottom: 16px; font-size:20px;line-height:1.2;font-weight:500;">Text styling</div>
+<div data-font-style="body" style="margin-bottom: 16px; font-size:13px;line-height:1.5;font-weight:400;">Choose Body or Heading from the dropdown. Toolbar buttons mirror these shortcuts:</div>
 <ul style="margin-bottom: 16px;">
-  <li data-font-style="body" style="font-size:16px;line-height:1.2;font-weight:400;">Bold: Cmd+B</li>
-  <li data-font-style="body" style="font-size:16px;line-height:1.2;font-weight:400;">Italic: Cmd+I</li>
-  <li data-font-style="body" style="font-size:16px;line-height:1.2;font-weight:400;">Underline: Cmd+U</li>
-  <li data-font-style="body" style="font-size:16px;line-height:1.2;font-weight:400;">Bulleted list: Cmd+L</li>
-  <li data-font-style="body" style="font-size:16px;line-height:1.2;font-weight:400;">Numbered list: Cmd+D</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Bold: Cmd+B</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Italic: Cmd+I</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Underline: Cmd+U</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Bulleted list: Cmd+L</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Numbered list: Cmd+D</li>
 </ul>
-<div data-font-style="heading2" style="margin-bottom: 16px; font-size:26px;line-height:1.2;font-weight:500;">Sidebar & notes</div>
+<div data-font-style="heading2" style="margin-bottom: 16px; font-size:20px;line-height:1.2;font-weight:500;">Sidebar & notes</div>
 <ul style="margin-bottom: 16px;">
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Use the sidebar toggle (top left) to show or hide the list.</li>
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Active note shows in blue; timestamps update when you edit.</li>
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Delete a note with the trash icon beside its title.</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Use the sidebar toggle (top left) to show or hide the list.</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Active note shows in blue; timestamps update when you edit.</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Delete a note with the trash icon beside its title.</li>
 </ul>
-<div data-font-style="heading2" style="margin-bottom: 16px; font-size:26px;line-height:1.2;font-weight:500;">Privacy & window</div>
+<div data-font-style="heading2" style="margin-bottom: 16px; font-size:20px;line-height:1.2;font-weight:500;">Privacy & window</div>
 <ul style="margin-bottom: 16px;">
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Privacy switch hides content from screenshots.</li>
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Opacity slider (bottom) adjusts transparency without hiding text.</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Privacy switch hides content from screenshots.</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Opacity slider (bottom) adjusts transparency without hiding text.</li>
 </ul>
-<div data-font-style="heading2" style="margin-bottom: 16px; font-size:26px;line-height:1.2;font-weight:500;">Shortcuts</div>
+<div data-font-style="heading2" style="margin-bottom: 16px; font-size:20px;line-height:1.2;font-weight:500;">Shortcuts</div>
 <ul style="margin-bottom: 16px;">
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Toggle sidebar: Option+Cmd+S</li>
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Undo / Redo: Cmd+Z / Shift+Cmd+Z</li>
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Formatting: Cmd+B, Cmd+I, Cmd+U, Cmd+L, Cmd+D</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Toggle sidebar: Option+Cmd+S</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Undo / Redo: Cmd+Z / Shift+Cmd+Z</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Formatting: Cmd+B, Cmd+I, Cmd+U, Cmd+L, Cmd+D</li>
 </ul>
-<div data-font-style="heading3" style="margin-bottom: 16px; font-size:22px;line-height:1.2;font-weight:500;">Tips</div>
+<div data-font-style="heading3" style="margin-bottom: 16px; font-size:18px;line-height:1.2;font-weight:500;">Tips</div>
 <ul style="margin-bottom: 16px;">
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Switching notes is an easy way to confirm your work saved.</li>
-  <li data-font-style="body" style="font-size:16px;line-height:1.24;font-weight:400;">Use headings to break sections and lists for talking points.</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Switching notes is an easy way to confirm your work saved.</li>
+  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Use headings to break sections and lists for talking points.</li>
 </ul>
 `
 
@@ -78,34 +78,10 @@ const generateNoteId = () => {
   return `note-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
-// Format a timestamp relative to now, e.g. "just now", "2h ago", "Yesterday", or "Nov. 18".
-function formatRelativeTimestamp(dateString) {
-  const parsed = new Date(dateString)
-  if (Number.isNaN(parsed.getTime())) return ''
-
-  const now = new Date()
-  const diffMs = now - parsed
-  const seconds = Math.floor(diffMs / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
-
-  if (seconds < 60) return 'just now'
-  if (minutes < 60) return `${Math.max(1, minutes)}m ago`
-  if (hours < 24) return `${Math.max(1, hours)}h ago`
-  if (hours < 48) return 'Yesterday'
-
-  const parts = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).formatToParts(parsed)
-  const month = parts.find(p => p.type === 'month')?.value ?? ''
-  const day = parts.find(p => p.type === 'day')?.value ?? ''
-  const monthWithPeriod = month ? `${month}.` : ''
-  return `${monthWithPeriod} ${day}`.trim()
-}
-
 // Mutable state that mirrors the UI.
 let saveTimeout
-let currentFontStyle = 'body'  // Default text style for the editor content area.
+let currentFontStyle = 'heading1'  // Default text style for the editor content area.
 let currentOpacity = 1.0  // Opacity value passed down from menu/tray.
-let toolbarVisible = true
 let sidebarCollapsed = true
 let sidebarToggleShortcutHint = '⌥⌘S'
 
@@ -116,8 +92,12 @@ let activeNoteId = null    // Identifier for the note shown in the editor.
 let editor
 let noteList
 let newNoteButton
+let toolbarWrapper
 let privacyCheckbox
 let saveStatus
+let toolbarPinned = false
+let toolbarForceShow = false
+let toolbarShowTimeout = null
 
 
 
@@ -179,6 +159,12 @@ function noteHasTypedContent(note = {}) {
   temp.innerHTML = note.content || ''
   const text = (temp.textContent || '').replace(/\u00A0/g, ' ').trim()
   return text.length > 0
+}
+
+function updateNewNoteButtonState() {
+  if (!newNoteButton || !editor) return
+  const text = (editor.textContent || '').replace(/\u00A0/g, ' ').trim()
+  newNoteButton.disabled = text.length === 0
 }
 
 // Reflect the active note's title in the header.
@@ -361,10 +347,6 @@ function renderNotesList() {
       selectNote(note.id)
     })
 
-    const timestamp = document.createElement('span')
-    timestamp.className = 'note-item__timestamp'
-    timestamp.textContent = formatRelativeTimestamp(note.updatedAt || note.createdAt)
-
     const deleteButton = document.createElement('button')
     deleteButton.type = 'button'
     deleteButton.className = 'note-item__delete'
@@ -380,7 +362,6 @@ function renderNotesList() {
     })
 
     item.appendChild(selectButton)
-    item.appendChild(timestamp)
     item.appendChild(deleteButton)
     fragment.appendChild(item)
   })
@@ -411,6 +392,7 @@ function selectNote(noteId, { focus = true } = {}) {
 
   renderNotesList()
   updateToolbarStates()
+  updateNewNoteButtonState()
 
   if (focus) {
     focusEditorAtEnd()
@@ -439,6 +421,7 @@ function createNote({ focus = true, persist = true } = {}) {
     editor.innerHTML = ''
     updateToolbarStates()
     updateHeaderTitle(note)
+    updateNewNoteButtonState()
 
     if (focus) {
       focusEditorAtEnd()
@@ -476,6 +459,7 @@ function deleteNote(noteId) {
       normalizeEditorStructure(editor)
       updateToolbarStates()
       updateHeaderTitle(notes[0])
+      updateNewNoteButtonState()
       focusEditorAtEnd()
     }
   }
@@ -494,6 +478,7 @@ function updateActiveNoteContent(content) {
   note.title = deriveTitleFromContent(content)
 
   updateHeaderTitle(note)
+  updateNewNoteButtonState()
   sortNotesByUpdated()
   renderNotesList()
   scheduleStateSave()
@@ -528,6 +513,10 @@ function updateFontSize(direction) {
 function insertTextFormat(command, value = null) {
   const editor = document.getElementById('notes')
   editor.focus()
+
+  if (command === 'bold' && selectionContainsHeading()) {
+    return
+  }
   
   // Use browser's built-in rich text commands
   document.execCommand(command, false, value)
@@ -712,16 +701,23 @@ function updateToolbarStates() {
   const bulletBtn = document.getElementById('bullet-btn')
   const numberBtn = document.getElementById('number-btn')
   const fontDropdown = document.getElementById('font-size-select')
-  
-  // Use browser's queryCommandState to check formatting
-  boldBtn.classList.toggle('active', document.queryCommandState('bold'))
+
+  // Reflect current font style in the dropdown based on the selection.
+  const activeStyleKey = detectSelectionStyle()
+  const hasHeadingSelection = selectionContainsHeading()
+
+  // Use browser's queryCommandState to check formatting.
+  const boldState = document.queryCommandState('bold')
+  const boldActive = !hasHeadingSelection && boldState
+
+  boldBtn.classList.toggle('active', boldActive)
+  boldBtn.disabled = hasHeadingSelection
+  boldBtn.setAttribute('aria-disabled', hasHeadingSelection ? 'true' : 'false')
   italicBtn.classList.toggle('active', document.queryCommandState('italic'))
   underlineBtn.classList.toggle('active', document.queryCommandState('underline'))
   bulletBtn.classList.toggle('active', document.queryCommandState('insertUnorderedList'))
   numberBtn.classList.toggle('active', document.queryCommandState('insertOrderedList'))
 
-  // Reflect current font style in the dropdown based on the selection.
-  const activeStyleKey = detectSelectionStyle()
   if (fontDropdown) {
     if (activeStyleKey) {
       fontDropdown.value = activeStyleKey
@@ -730,6 +726,145 @@ function updateToolbarStates() {
       fontDropdown.value = currentFontStyle
     }
   }
+}
+
+function selectionContainsHeading() {
+  if (!editor) return false
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return false
+  const range = selection.getRangeAt(0)
+
+  const blocks = collectBlocksFromRange(range, editor)
+  if (blocks.length) {
+    return blocks.some(block => {
+      const styleKey = block.dataset?.fontStyle || ''
+      return typeof styleKey === 'string' && styleKey.startsWith('heading')
+    })
+  }
+
+  const nearestBlock = findNearestBlock(range.startContainer, editor)
+  const styleKey = nearestBlock?.dataset?.fontStyle || ''
+  return typeof styleKey === 'string' && styleKey.startsWith('heading')
+}
+
+function isSelectionInsideEditor() {
+  if (!editor) return false
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return false
+  const range = selection.getRangeAt(0)
+  return editor.contains(range.startContainer) || editor.contains(range.endContainer)
+}
+
+function isSelectionRange() {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return false
+  return !selection.isCollapsed
+}
+
+function getSelectionRect() {
+  if (!editor) return null
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return null
+
+  const range = selection.getRangeAt(0)
+  let rect = range.getBoundingClientRect()
+
+  if ((!rect || (rect.width === 0 && rect.height === 0)) && range.startContainer) {
+    if (range.startContainer.nodeType === Node.TEXT_NODE) {
+      const textNode = range.startContainer
+      const length = textNode.textContent?.length ?? 0
+      if (length > 0) {
+        const probeRange = document.createRange()
+        const start = Math.max(0, Math.min(range.startOffset - 1, length - 1))
+        const end = Math.min(length, start + 1)
+        probeRange.setStart(textNode, start)
+        probeRange.setEnd(textNode, end)
+        rect = probeRange.getBoundingClientRect()
+      }
+    }
+  }
+
+  if (!rect || (rect.width === 0 && rect.height === 0)) {
+    const fallbackBlock = findNearestBlock(range.startContainer, editor)
+    rect = fallbackBlock ? fallbackBlock.getBoundingClientRect() : null
+  }
+
+  return rect
+}
+
+function positionToolbar() {
+  if (!toolbarWrapper) return
+  const rect = getSelectionRect()
+  if (!rect) return
+
+  const toolbarWidth = toolbarWrapper.offsetWidth
+  const toolbarHeight = toolbarWrapper.offsetHeight
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+  const margin = 12
+
+  let top = rect.top - toolbarHeight - 12
+  if (top < margin) {
+    top = rect.bottom + 12
+  }
+
+  let left = rect.left + rect.width / 2 - toolbarWidth / 2
+  left = Math.max(margin, Math.min(left, viewportWidth - toolbarWidth - margin))
+
+  const maxTop = viewportHeight - toolbarHeight - margin
+  top = Math.max(margin, Math.min(top, maxTop))
+
+  toolbarWrapper.style.top = `${Math.round(top)}px`
+  toolbarWrapper.style.left = `${Math.round(left)}px`
+}
+
+function updateToolbarVisibility() {
+  if (!toolbarWrapper) return
+  const hasSelection = isSelectionInsideEditor()
+  const shouldShow = toolbarPinned && hasSelection && (isSelectionRange() || toolbarForceShow)
+
+  if (!shouldShow) {
+    if (toolbarShowTimeout) {
+      clearTimeout(toolbarShowTimeout)
+      toolbarShowTimeout = null
+    }
+    toolbarWrapper.classList.remove('toolbar-active')
+    return
+  }
+
+  if (toolbarWrapper.classList.contains('toolbar-active')) {
+    requestAnimationFrame(positionToolbar)
+    return
+  }
+
+  if (toolbarShowTimeout) return
+
+  toolbarShowTimeout = setTimeout(() => {
+    toolbarShowTimeout = null
+    const stillShouldShow = toolbarPinned && isSelectionInsideEditor() && (isSelectionRange() || toolbarForceShow)
+    if (!stillShouldShow) return
+    toolbarWrapper.classList.add('toolbar-active')
+    requestAnimationFrame(positionToolbar)
+  }, 150)
+}
+
+function ensureDefaultHeadingStyle() {
+  if (!editor) return
+  const text = (editor.textContent || '').replace(/\u00A0/g, ' ').trim()
+  if (text.length > 0) return
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return
+
+  const headingStyle = FONT_STYLE_LOOKUP.heading1
+  if (!headingStyle) return
+  currentFontStyle = headingStyle.key
+
+  const dropdown = document.getElementById('font-size-select')
+  if (dropdown) {
+    dropdown.value = headingStyle.key
+  }
+
+  applyFontStyle(headingStyle)
 }
 // Map dropdown selections to predefined font sizes.
 function setFontSize(styleKey) {
@@ -765,7 +900,7 @@ function updateOpacity(value) {
   document.body.style.backgroundColor = `rgba(255, 255, 255, ${value * 0.95})`
 
   // Header and controls always fully opaque backgrounds
-  header.style.backgroundColor = '#f8f9fa'
+  header.style.backgroundColor = '#ffffff'
   controls.style.backgroundColor = '#ffffff'
 
   if (appLayout) {
@@ -855,8 +990,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   privacyCheckbox = document.getElementById('privacy-checkbox')
 
   const opacitySlider = document.getElementById('opacity-slider')
-  const toolbarWrapper = document.getElementById('toolbar-wrapper')
-  const toolbarToggle = document.getElementById('toolbar-toggle')
+  toolbarWrapper = document.getElementById('toolbar-wrapper')
   const sidebarToggle = document.getElementById('toolbar-sidebar-toggle')
   const fontSizeDropdown = document.getElementById('font-size-select')
   const isMac = navigator.platform.toUpperCase().includes('MAC')
@@ -977,6 +1111,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     editor.innerHTML = activeNote ? activeNote.content : ''
     normalizeEditorStructure(editor)
     updateHeaderTitle(activeNote)
+    updateNewNoteButtonState()
   }
 
   renderNotesList()
@@ -1017,11 +1152,45 @@ window.addEventListener('DOMContentLoaded', async () => {
     })
 
     // Refresh toolbar state whenever the selection changes via typing or clicking.
-    editor.addEventListener('keyup', updateToolbarStates)
-    editor.addEventListener('mouseup', updateToolbarStates)
-    editor.addEventListener('focus', updateToolbarStates)
+    editor.addEventListener('keyup', () => {
+      updateToolbarStates()
+      updateToolbarVisibility()
+    })
+    editor.addEventListener('mouseup', () => {
+      toolbarPinned = isSelectionRange()
+      toolbarForceShow = false
+      updateToolbarStates()
+      updateToolbarVisibility()
+    })
+    editor.addEventListener('dblclick', () => {
+      if (!isSelectionInsideEditor()) return
+      toolbarPinned = true
+      toolbarForceShow = !isSelectionRange()
+      updateToolbarStates()
+      updateToolbarVisibility()
+    })
+    editor.addEventListener('focus', () => {
+      updateToolbarStates()
+      ensureDefaultHeadingStyle()
+      updateToolbarVisibility()
+    })
+    editor.addEventListener('blur', () => {
+      requestAnimationFrame(updateToolbarVisibility)
+    })
+    editor.addEventListener('scroll', () => {
+      updateToolbarVisibility()
+    })
 
     editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        const activeStyleKey = detectSelectionStyle()
+        if (activeStyleKey === 'heading1') {
+          requestAnimationFrame(() => {
+            setFontSize('body')
+          })
+        }
+      }
+
       const cmdKey = isMac ? e.metaKey : e.ctrlKey
       if (!cmdKey) return
 
@@ -1045,6 +1214,10 @@ window.addEventListener('DOMContentLoaded', async () => {
           break
         }
         case 'b':
+          if (selectionContainsHeading()) {
+            e.preventDefault()
+            break
+          }
           e.preventDefault()
           insertTextFormat('bold')
           break
@@ -1069,9 +1242,28 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.addEventListener('selectionchange', () => {
-    if (document.activeElement === editor) {
+    if (isSelectionInsideEditor()) {
       updateToolbarStates()
+      updateToolbarVisibility()
     }
+  })
+
+  document.addEventListener('mousedown', (event) => {
+    if (!toolbarWrapper || !editor) return
+    const target = event.target
+    const toolbarActive = toolbarWrapper.classList.contains('toolbar-active')
+    if (toolbarActive && !toolbarWrapper.contains(target)) {
+      toolbarPinned = false
+      toolbarForceShow = false
+    } else if (!toolbarWrapper.contains(target)) {
+      toolbarPinned = false
+      toolbarForceShow = false
+    }
+    updateToolbarVisibility()
+  })
+
+  window.addEventListener('resize', () => {
+    updateToolbarVisibility()
   })
 
   if (opacitySlider) {
@@ -1088,29 +1280,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (fontSizeDropdown) {
     fontSizeDropdown.addEventListener('change', (e) => {
       setFontSize(e.target.value)
+      toolbarPinned = false
+      updateToolbarVisibility()
     })
   }
 
-  if (toolbarToggle && toolbarWrapper) {
-    const updateToolbarToggleState = () => {
-      toolbarWrapper.classList.toggle('toolbar-hidden', !toolbarVisible)
-
-      const label = toolbarToggle.querySelector('.toggle-label')
-      if (label) {
-        label.textContent = toolbarVisible ? 'Hide toolbar' : 'Show toolbar'
-      }
-
-      toolbarToggle.setAttribute('aria-expanded', toolbarVisible ? 'true' : 'false')
-      toolbarToggle.setAttribute('aria-label', toolbarVisible ? 'Hide toolbar' : 'Show toolbar')
-    }
-
-    toolbarToggle.addEventListener('click', () => {
-      toolbarVisible = !toolbarVisible
-      updateToolbarToggleState()
-    })
-
-    updateToolbarToggleState()
-  }
+  updateToolbarVisibility()
 
   // Hidden file input reused for the plain-text and JSON import flows.
   const fileInput = document.createElement('input')
@@ -1259,22 +1434,32 @@ window.addEventListener('DOMContentLoaded', async () => {
 // Toolbar button shortcuts mimic the keyboard formatting accelerators.
 document.getElementById('bold-btn').addEventListener('click', () => {
   insertTextFormat('bold')
+  toolbarPinned = false
+  updateToolbarVisibility()
 })
 
 document.getElementById('italic-btn').addEventListener('click', () => {
   insertTextFormat('italic')
+  toolbarPinned = false
+  updateToolbarVisibility()
 })
 
 document.getElementById('underline-btn').addEventListener('click', () => {
   insertTextFormat('underline')
+  toolbarPinned = false
+  updateToolbarVisibility()
 })
 
 document.getElementById('bullet-btn').addEventListener('click', () => {
   insertListItem('bullet')
+  toolbarPinned = false
+  updateToolbarVisibility()
 })
 
 document.getElementById('number-btn').addEventListener('click', () => {
   insertListItem('number')
+  toolbarPinned = false
+  updateToolbarVisibility()
 })
 
 
@@ -1305,7 +1490,7 @@ window.api.onToggleClickThrough((event, isClickThrough) => {
     controls.style.pointerEvents = 'none'
     controls.style.opacity = '0.5'
 
-    editor.placeholder = 'CLICK-THROUGH MODE ACTIVE\n\nWindow won\'t intercept clicks.\nPress Cmd+Shift+T to edit notes again.'
+    editor.dataset.placeholder = 'CLICK-THROUGH MODE ACTIVE\n\nWindow won\'t intercept clicks.\nPress Cmd+Shift+T to edit notes again.'
   } else {
     body.classList.remove('click-through')
     editor.contentEditable = 'true'
@@ -1313,7 +1498,7 @@ window.api.onToggleClickThrough((event, isClickThrough) => {
     controls.style.pointerEvents = 'auto'
     controls.style.opacity = '1'
 
-    editor.placeholder = 'Type your presenter notes here...\n\n• They auto-save as you type\n• Won\'t appear in screenshots\n• Always stays on top\n\nGlobal Shortcuts:\n• Cmd+Shift+N: Toggle window\n• Cmd+Shift+O: Cycle opacity\n• Cmd+Shift+T: Click-through mode\n• Cmd+Shift+Plus/Minus: Font size'
+    editor.dataset.placeholder = ''
   }
 
 })

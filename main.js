@@ -16,7 +16,21 @@ function setContentProtection(win, on) {
 
 // Mutable references to the single BrowserWindow and tray icon we manage.
 let mainWindow
-let tray = null  // Add tray variable
+let tray = null
+// Single source of truth for click-through state so the menu, tray, and shortcut stay in sync.
+let clickThroughOn = false
+
+function setClickThrough(on) {
+  clickThroughOn = !!on
+  if (mainWindow) {
+    mainWindow.setIgnoreMouseEvents(clickThroughOn)
+    mainWindow.webContents.send('toggle-click-through', clickThroughOn)
+  }
+  const appMenu = Menu.getApplicationMenu()
+  const viewMenu = appMenu && appMenu.items.find(item => item.label === 'View')
+  const item = viewMenu && viewMenu.submenu.items.find(i => i.label === 'Click-through Mode')
+  if (item) item.checked = clickThroughOn
+}
 
 
 // Compute the file path where we cache all persisted application state.
@@ -106,15 +120,25 @@ loadNotesState()
 
 // Create system tray icon and contextual menu for quick toggles outside the main window.
 function createTray() {
-  // Create a 16x16 template image for the tray (macOS style).
-  // For now we'll use a simple colored square - you can add a real icon later.
-  const icon = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAdgAAAHYBTnsmCAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAEISURBVDiNpZMxasNAEEVfxEbgQpVOkELnSCFwYXAhcKETpBC4ELjQCVIIXAhcCFwIXAhc6AQpBC4ELgQuBC4ELgQuBDswi7SSVmt7YGCZnfn/zZ+ZFQAhxBfQAzpAG2gBTaABXANXQA2oAudABTgDysApcAIcA0fAIXAAFIA9IA/sgAwQAx6AB7x730MKuAL2gV0gC2wDW8AmkAY2gDUgCawCCSAOxIAVYBlYAhaB+aQQYuBL+GaSmB7TMc0kdY5MkmctdzAzBy3/m4M5c9Cz3EGStXRSyTQJIT4tJelYq6qqSikrlmVp7cN2u91dSvlqPpNSjv8HAKjruu84TlHXdTdN04HneW8TN30DLGJhTKHhDDwAAAAASUVORK5CYII=')
-  
+  // Load a black-on-transparent template image so macOS inverts it
+  // automatically for light/dark menu bars. File must be named with the
+  // "Template" suffix and live next to the @2x retina version.
+  const iconPath = path.join(__dirname, 'build', 'trayTemplate.png')
+  let icon
+  if (fs.existsSync(iconPath)) {
+    icon = nativeImage.createFromPath(iconPath)
+    icon.setTemplateImage(true)
+  } else {
+    // Fallback: empty image (no visual) so the app still launches if the asset is missing.
+    console.warn('trayTemplate.png not found; tray icon will be blank.')
+    icon = nativeImage.createEmpty()
+  }
+
   tray = new Tray(icon)
-  tray.setToolTip('Presenter Notes')
+  tray.setToolTip('Ghostwriter')
 
   //Show Inspect Element devtool
-  mainWindow.webContents.toggleDevTools();
+  //mainWindow.webContents.toggleDevTools();
   
   // Create tray menu for show/hide, opacity, and font size shortcuts.
   const trayMenu = Menu.buildFromTemplate([
@@ -293,20 +317,7 @@ function registerGlobalShortcuts() {
 
   // Toggle click-through mode with Cmd+Shift+T
   const clickThroughRegistered = globalShortcut.register('Command+Shift+T', () => {
-    if (mainWindow) {
-      // Get current state from the menu
-      const menu = Menu.getApplicationMenu()
-      const viewMenu = menu.items.find(item => item.label === 'View')
-      const clickThroughItem = viewMenu.submenu.items.find(item => item.label === 'Click-through Mode')
-      
-      // Toggle the state
-      const newState = !clickThroughItem.checked
-      clickThroughItem.checked = newState
-      
-      // Apply the change
-      mainWindow.setIgnoreMouseEvents(newState)
-      mainWindow.webContents.send('toggle-click-through', newState)
-    }
+    setClickThrough(!clickThroughOn)
   })
   
   console.log('  Cmd+Shift+T (click-through):', clickThroughRegistered)
@@ -325,11 +336,11 @@ function createMenu() {
   // Build the macOS application menu with shortcuts that mirror the tray and renderer controls.
   const template = [
     {
-      label: 'Presenter Notes',
+      label: 'Ghostwriter',
       // App menu: handles about panel, visibility, quit, and shortcut legend.
       submenu: [
         {
-          label: 'About Presenter Notes',
+          label: 'About Ghostwriter',
           role: 'about'
         },
         { type: 'separator' },
@@ -481,10 +492,7 @@ function createMenu() {
           checked: false,
           accelerator: 'Cmd+Shift+T',
           click: (menuItem) => {
-            if (mainWindow) {
-              mainWindow.setIgnoreMouseEvents(menuItem.checked)
-              mainWindow.webContents.send('toggle-click-through', menuItem.checked)
-            }
+            setClickThrough(menuItem.checked)
           }
         }
       ]
@@ -565,13 +573,14 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 728,
     height: 600,
+    show: false,
 
     frame: false,
     transparent: true,
     alwaysOnTop: true,
-    backgroundColor: '#00000000',  // Add this line - fully transparent
+    backgroundColor: '#00000000',
     visibleOnAllWorkspaces: true,
-    titleBarStyle: 'hiddenInset', // Add this line - enables custom titlebar
+    titleBarStyle: 'hiddenInset',
 
     resizable: true,
     minWidth: 642,
@@ -586,12 +595,35 @@ function createWindow() {
     }
   })
 
+  // Wait until the renderer has painted before revealing the window
+  // so we don't show a transparent flash on cold start.
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show()
+  })
+
   // Reapply the saved privacy preference so window captures stay blocked if desired.
   setContentProtection(mainWindow, privacyOn);
   console.log('Content protection enabled')
   
   // Load the HTML shell after the window exists.
   mainWindow.loadFile('index.html')
+
+  mainWindow.webContents.on('context-menu', (event, params) => {
+    if (!params.isEditable) return
+
+    const menu = Menu.buildFromTemplate([
+      { role: 'undo', enabled: params.editFlags.canUndo },
+      { role: 'redo', enabled: params.editFlags.canRedo },
+      { type: 'separator' },
+      { role: 'cut', enabled: params.editFlags.canCut },
+      { role: 'copy', enabled: params.editFlags.canCopy },
+      { role: 'paste', enabled: params.editFlags.canPaste },
+      { type: 'separator' },
+      { role: 'selectAll', enabled: params.editFlags.canSelectAll }
+    ])
+
+    menu.popup({ window: mainWindow })
+  })
 
   // Watch for fullscreen entry so the renderer can adjust layout spacing on macOS.
   mainWindow.on('enter-full-screen', () => {

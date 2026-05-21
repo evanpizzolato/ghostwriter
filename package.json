@@ -1,6 +1,6 @@
 {
-  "name": "presenter-notes",
-  "version": "1.0.0",
+  "name": "ghostwriter",
+  "version": "0.40.0",
   "description": "Privacy-focused notes that stay hidden from screenshots and screen shares",
   "main": "main.js",
   "scripts": {
@@ -11,16 +11,34 @@
     "pack": "electron-builder --dir"
   },
   "devDependencies": {
-    "electron": "latest",
-    "electron-builder": "latest",
-    "electronmon": "latest"
+    "electron": "37.4.0",
+    "electron-builder": "^26.5.0",
+    "electronmon": "2.0.4"
   },
   "build": {
-    "appId": "com.evanpizzolato.presenter-notes",
-    "productName": "Presenter Notes",
+    "appId": "com.evanpizzolato.ghostwriter",
+    "productName": "Ghostwriter",
     "directories": {
       "output": "dist"
     },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "style.css",
+      "build/**/*",
+      "package.json",
+      "!**/*.md",
+      "!**/.DS_Store",
+      "!sign-*.sh",
+      "!create_temp_icon.sh",
+      "!temp_icon.svg",
+      "!docs/**",
+      "!node_modules/**/{CHANGELOG.md,README.md,readme.md,.npmignore,.travis.yml}",
+      "!node_modules/**/test/**",
+      "!node_modules/**/tests/**"
+    ],
     "mac": {
       "category": "public.app-category.productivity",
       "icon": "build/icon.icns",
@@ -29,27 +47,25 @@
       "darkModeSupport": true,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
+      "identity": "Evan Pizzolato (463BF86Y8P)",
+      "notarize": false,
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": ["arm64", "x64"]
         }
       ]
     },
     "dmg": {
+      "title": "Ghostwriter ${version}",
+      "icon": "build/icon.icns",
+      "background": "build/dmg-background.png",
+      "window": { "width": 540, "height": 380 },
+      "iconSize": 96,
       "contents": [
-        {
-          "x": 130,
-          "y": 220
-        },
-        {
-          "x": 410,
-          "y": 220,
-          "type": "link",
-          "path": "/Applications"
-        }
-      ],
-      "title": "Presenter Notes Installer"
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
     }
   },
   "author": "Evan Pizzolato",
