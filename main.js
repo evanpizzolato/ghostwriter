@@ -1,7 +1,8 @@
 // Core Electron and Node imports used throughout the main process.
-const { app, BrowserWindow, ipcMain, Menu, globalShortcut, Tray, nativeImage } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu, globalShortcut, Tray, nativeImage, dialog } = require('electron')
 const path = require('path')
 const fs = require('fs')
+const { autoUpdater } = require('electron-updater')
 
 // =====  PRIVACY TOGGLE  =====
 // Tracks whether screenshots should be blocked; value is hydrated from disk before the window spins up.
@@ -116,6 +117,84 @@ function persistNotesState(updates = {}) {
 
 loadNotesState()
 
+
+// =====  AUTO-UPDATER  =====
+// electron-updater talks to GitHub Releases (configured via the `publish` block
+// in package.json) and downloads new versions in the background. Only runs in
+// a packaged build — in dev there is no signed app to update.
+
+// Tracks whether the in-flight check was started by the user clicking the tray
+// item (so we surface "you're up to date" / error dialogs) vs. the silent
+// check on launch.
+let manualUpdateCheckInFlight = false
+
+function setupAutoUpdater() {
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('Update available:', info.version)
+  })
+
+  autoUpdater.on('update-not-available', () => {
+    if (manualUpdateCheckInFlight) {
+      manualUpdateCheckInFlight = false
+      dialog.showMessageBox({
+        type: 'info',
+        message: 'You’re up to date',
+        detail: `Ghostwriter ${app.getVersion()} is the latest version.`,
+        buttons: ['OK']
+      })
+    }
+  })
+
+  autoUpdater.on('error', (err) => {
+    console.error('Auto-updater error:', err)
+    if (manualUpdateCheckInFlight) {
+      manualUpdateCheckInFlight = false
+      dialog.showMessageBox({
+        type: 'error',
+        message: 'Update check failed',
+        detail: err == null ? 'Unknown error' : (err.stack || err.message || String(err)),
+        buttons: ['OK']
+      })
+    }
+  })
+
+  autoUpdater.on('update-downloaded', (info) => {
+    manualUpdateCheckInFlight = false
+    dialog.showMessageBox({
+      type: 'info',
+      message: `Ghostwriter ${info.version} is ready to install`,
+      detail: 'Restart now to apply the update, or it will install the next time you quit.',
+      buttons: ['Restart Now', 'Later'],
+      defaultId: 0,
+      cancelId: 1
+    }).then((result) => {
+      if (result.response === 0) {
+        autoUpdater.quitAndInstall()
+      }
+    })
+  })
+}
+
+function checkForUpdates({ manual = false } = {}) {
+  if (!app.isPackaged) {
+    if (manual) {
+      dialog.showMessageBox({
+        type: 'info',
+        message: 'Updates are disabled in development',
+        detail: 'Auto-update only runs in a packaged, signed build.',
+        buttons: ['OK']
+      })
+    }
+    return
+  }
+  manualUpdateCheckInFlight = manual
+  autoUpdater.checkForUpdates().catch((err) => {
+    console.error('checkForUpdates rejected:', err)
+  })
+}
 
 
 // Create system tray icon and contextual menu for quick toggles outside the main window.
@@ -247,13 +326,20 @@ function createTray() {
     },
     { type: 'separator' },
     {
+      label: 'Check for Updates…',
+      click: () => {
+        checkForUpdates({ manual: true })
+      }
+    },
+    { type: 'separator' },
+    {
       label: 'Quit',
       click: () => {
         app.quit()
       }
     }
   ])
-  
+
   tray.setContextMenu(trayMenu)
   
   // Show window on tray icon click (left click on Mac)
@@ -772,6 +858,8 @@ app.whenReady().then(() => {
   createWindow()
   createTray()  // Add tray icon
   registerGlobalShortcuts()  // Register global hotkeys
+  setupAutoUpdater()
+  checkForUpdates()  // Silent background check on launch.
 })
 
 // Clean up global shortcuts when app quits

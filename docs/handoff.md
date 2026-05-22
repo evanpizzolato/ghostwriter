@@ -140,6 +140,27 @@ Replace `BUILD` with `x64` or `universal` as needed.
 - DevTools toggle line in `main.js` (around line 279 in `createTray()`) should be removed before final distribution
 - Project path: `/Users/evanpizzolato/Documents/Code/notesapp/`
 
+## Distribution Plan (locked 2026-05-21)
+
+**Primary channel:** GitHub Releases at `github.com/evanpizzolato/ghostwriter/releases`. Marketing site links directly — no proxy, no CDN. GitHub already hosts signed/notarized DMGs free and is a trust signal for a privacy app.
+
+**Pricing:** Free. No Gumroad, no license keys. GitHub Sponsors is an optional future add-on.
+
+**Build target:** One universal DMG per release (`arch: universal` is already in the electron-builder target list). Replaces the current two-DMG arm64+x64 layout so the marketing site can have a single "Download for macOS" button. ~220 MB instead of 110/117 MB per arch.
+
+**Stable download URL:** `https://github.com/evanpizzolato/ghostwriter/releases/latest/download/Ghostwriter.dmg` — GitHub 302-redirects `/latest/download/<filename>` to the current tag, so the site never has to redeploy per release. Requires the asset filename to be stable across releases (drop the version from the universal DMG name on upload).
+
+**Auto-updates:** Wire `electron-updater` against GitHub Releases as part of v0.42. electron-builder publishes `latest-mac.yml` automatically when `--publish always` is set with `GH_TOKEN`. First real update push will be v0.43 → existing v0.42 users.
+
+**Verification UX:** Marketing site CTA copy stays minimal: "Requires macOS 12 or later · Intel & Apple Silicon". No SHA256SUMS on the homepage — notarization means Gatekeeper opens it without warnings. Checksums stay on the GitHub Release page for power users.
+
+## v0.42 Implementation Checklist
+- [ ] Switch `mac.target` to `{ target: "dmg", arch: ["universal"] }` (drop separate arm64/x64 DMG output).
+- [ ] Set DMG `artifactName` so the output is a version-less filename like `Ghostwriter.dmg` (or keep versioned + upload a `Ghostwriter.dmg` copy as an additional release asset for the stable URL).
+- [ ] Add `electron-updater` dependency + `publish: { provider: "github", owner: "evanpizzolato", repo: "ghostwriter" }` in electron-builder config.
+- [ ] Wire `autoUpdater.checkForUpdatesAndNotify()` in `main.js` after app ready; add tray menu "Check for Updates…" item.
+- [ ] Test the update flow end-to-end before announcing: ship a throwaway v0.42.1 to verify a v0.42 install auto-upgrades.
+- [ ] Update `notarize.sh` if it hard-codes the two-DMG filenames.
+
 ## Future Considerations Discussed
-- Hosting options: own website, GitHub Releases, or Gumroad
 - Code improvements discussed earlier in the conversation (see Complete_Project_Documentation.md for details)

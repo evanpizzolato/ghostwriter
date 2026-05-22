@@ -1,6 +1,6 @@
 {
   "name": "ghostwriter",
-  "version": "0.41.0",
+  "version": "0.42.0",
   "description": "Privacy-focused notes that stay hidden from screenshots and screen shares",
   "main": "main.js",
   "scripts": {
@@ -52,7 +52,9 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["arm64", "x64"]
+          "arch": [
+            "universal"
+          ]
         }
       ]
     },
@@ -60,14 +62,34 @@
       "title": "Ghostwriter ${version}",
       "icon": "build/icon.icns",
       "background": "build/dmg-background.png",
-      "window": { "width": 540, "height": 380 },
+      "window": {
+        "width": 540,
+        "height": 380
+      },
       "iconSize": 96,
       "contents": [
-        { "x": 130, "y": 220 },
-        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
-      ]
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "artifactName": "Ghostwriter.dmg"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "evanpizzolato",
+      "repo": "ghostwriter"
     }
   },
   "author": "Evan Pizzolato",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "electron-updater": "^6.8.3"
+  }
 }

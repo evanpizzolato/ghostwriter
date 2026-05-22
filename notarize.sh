@@ -1,7 +1,11 @@
 #!/bin/bash
 # Notarize + staple Ghostwriter DMGs produced by electron-builder.
-# electron-builder now auto-signs the .app and .dmg during `npm run dist-mac`,
+# electron-builder auto-signs the .app and .dmg during `npm run dist-mac`,
 # so this script only handles notarization (which still needs a keychain profile).
+#
+# As of v0.42 we ship a single universal DMG named `Ghostwriter.dmg` (no version
+# in the filename) so the marketing site can link to a stable URL. This script
+# notarizes every .dmg under dist/ so it also tolerates older multi-arch layouts.
 #
 # Prereq (one-time): xcrun notarytool store-credentials "ghostwriter-notarize" \
 #                      --apple-id <you@example.com> --team-id 463BF86Y8P --password <app-specific-password>
@@ -10,18 +14,19 @@
 
 set -e
 
-VERSION=$(node -p "require('./package.json').version")
 KEYCHAIN_PROFILE="ghostwriter-notarize"
 
-ARM64_DMG="dist/Ghostwriter-${VERSION}-arm64.dmg"
-X64_DMG="dist/Ghostwriter-${VERSION}.dmg"
+shopt -s nullglob
+DMGS=(dist/*.dmg)
+shopt -u nullglob
+
+if [ ${#DMGS[@]} -eq 0 ]; then
+  echo "No DMGs found in dist/. Run 'npm run dist-mac' first."
+  exit 1
+fi
 
 notarize_one() {
   local DMG="$1"
-  if [ ! -f "$DMG" ]; then
-    echo "  skip: $DMG not found"
-    return
-  fi
 
   echo ""
   echo "=========================================="
@@ -38,8 +43,9 @@ notarize_one() {
   xcrun stapler validate "$DMG"
 }
 
-notarize_one "$ARM64_DMG"
-notarize_one "$X64_DMG"
+for DMG in "${DMGS[@]}"; do
+  notarize_one "$DMG"
+done
 
 echo ""
 echo "=========================================="
