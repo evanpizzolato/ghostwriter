@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.41.0 — 2026-05-21
+
+Polish pass on cold-start visuals.
+
+### Cold start
+- Window now stays fully invisible while the renderer hydrates notes and lays out the UI, then fades in (chrome + content together) over ~100ms. Replaces the prior `ready-to-show` reveal, which fired before content was settled and let the macOS traffic-light buttons appear over an empty transparent window.
+- Reveal is gated on a new `renderer-ready` IPC signal, with a 2 s failsafe that force-shows at full opacity if the signal never arrives.
+
+### Fixes
+- Editor scrollbar thumb is visible again. The thumb had the same color as the track in v0.40, so it disappeared against the track even though scrolling worked. Thumb now uses `rgba(0,0,0,0.1)` on a transparent track, matching the sidebar.
+
 ## v0.40.0 — 2026-05-21
 
 First release-quality build. Adds production packaging, hardening, and a real installer experience. Signed with Developer ID and notarized by Apple.

@@ -835,19 +835,18 @@
 
   /* Custom scrollbar for textarea */
   #notes::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
   }
 
   #notes::-webkit-scrollbar-track {
-    background: var(--bg-tertiary);
-    border-radius: 4px;
+    background: transparent;
   }
 
   #notes::-webkit-scrollbar-thumb {
-    background: var(--bg-tertiary);
-    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
   }
 
   #notes::-webkit-scrollbar-thumb:hover {
-    background: var(--bg-tertiary);
+    background: rgba(0, 0, 0, 0.2);
   }

@@ -1429,6 +1429,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (editor) {
     focusEditorAtEnd()
   }
+
+  // Wait one rAF after hydration so layout/paint has settled, then tell
+  // the main process it can reveal the window with the fade-in.
+  if (window.api?.signalReady) {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.api.signalReady())
+    })
+  }
 })
 
 // Toolbar button shortcuts mimic the keyboard formatting accelerators.

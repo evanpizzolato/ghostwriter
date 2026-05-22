@@ -595,10 +595,41 @@ function createWindow() {
     }
   })
 
-  // Wait until the renderer has painted before revealing the window
-  // so we don't show a transparent flash on cold start.
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show()
+  // Keep the window fully invisible until the renderer signals it has
+  // hydrated notes and laid out the UI. Avoids the cold-start flash where
+  // the macOS traffic lights appear over an empty transparent window.
+  mainWindow.setOpacity(0)
+
+  // Failsafe: if the renderer never signals ready (crash, load failure),
+  // reveal the window at full opacity after 2s so the app isn't stuck invisible.
+  const readyFailsafe = setTimeout(() => {
+    revealWindow()
+  }, 2000)
+
+  // Ensure the reveal logic only runs once across the failsafe + signal paths.
+  let revealed = false
+  function revealWindow() {
+    if (revealed || !mainWindow) return
+    revealed = true
+    clearTimeout(readyFailsafe)
+    if (!mainWindow.isVisible()) mainWindow.show()
+    // Tween 0 → 1 over ~100ms in 6 steps. Electron has no built-in
+    // window-opacity animation, so we step manually with setInterval.
+    const steps = 6
+    const duration = 100
+    let step = 0
+    const tick = setInterval(() => {
+      step += 1
+      const next = Math.min(step / steps, 1)
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.setOpacity(next)
+      }
+      if (step >= steps) clearInterval(tick)
+    }, duration / steps)
+  }
+
+  ipcMain.once('renderer-ready', () => {
+    revealWindow()
   })
 
   // Reapply the saved privacy preference so window captures stay blocked if desired.

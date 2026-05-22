@@ -28,5 +28,8 @@ contextBridge.exposeInMainWorld('api', {
 
   // Window state helpers
   getFullscreenState: () => ipcRenderer.invoke('is-window-fullscreen'),
-  onFullscreenChanged: (callback) => ipcRenderer.on('window-fullscreen-changed', callback)
+  onFullscreenChanged: (callback) => ipcRenderer.on('window-fullscreen-changed', callback),
+
+  // Signal that the renderer has finished hydrating and is ready to be revealed.
+  signalReady: () => ipcRenderer.send('renderer-ready')
 })
