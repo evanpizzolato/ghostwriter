@@ -56,10 +56,6 @@ npm run dist-mac    # signed universal DMG + mac zip in ./dist
 
 The full publish workflow — tagging, release notes, asset upload, electron-updater manifest — is documented in `docs/handoff.md`. Latest signed build: [releases/latest](https://github.com/evanpizzolato/ghostwriter/releases/latest).
 
-## License
-
-GPL-3.0 — see [LICENSE](LICENSE).
-
 ## Acknowledgments
 
 Parts of the UI polish and color system in this project were built with the help of two Claude Code plugins by [Jakub Krehel](https://github.com/jakubkrehel) ([@jakubkrehel](https://x.com/jakubkrehel)):
