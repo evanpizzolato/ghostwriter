@@ -55,3 +55,10 @@ npm run dist-mac    # signed universal DMG + mac zip in ./dist
 ```
 
 The full publish workflow — tagging, release notes, asset upload, electron-updater manifest — is documented in `docs/handoff.md`. Latest signed build: [releases/latest](https://github.com/evanpizzolato/ghostwriter/releases/latest).
+
+## Acknowledgments
+
+Parts of the UI polish and color system in this project were built with the help of two Claude Code plugins by [Jakub Krehel](https://github.com/jakubkrehel) ([@jakubkrehel](https://x.com/jakubkrehel)):
+
+- **[make-interfaces-feel-better](https://github.com/jakubkrehel/make-interfaces-feel-better)** — design-engineering principles for press feedback, hit-area expansion, tabular numerics, and transition discipline. Applied during the interaction polish pass; see `docs/design-system.md` §5.
+- **[oklch-skill](https://github.com/jakubkrehel/oklch-skill)** — guidance for migrating the color palette to OKLCH (perceptually uniform color), unifying the blue ramp on a single hue, and introducing a neutral gray scale. Applied to `style.css` `:root` tokens; see `docs/design-system.md` §2.
