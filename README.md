@@ -3,7 +3,7 @@
 ## Overview
 Ghostwriter is a privacy-focused, always-on-top notes overlay for macOS. It supports transparency, a collapsible sidebar, and a floating formatting toolbar. Notes auto-save, can be exported or imported, and can be hidden from screenshots when privacy mode is enabled.
 
-Current version: **0.40.0**
+Current version: **0.41.0**
 
 ## What You Can Do
 - Capture notes in a lightweight overlay that stays above other apps.
