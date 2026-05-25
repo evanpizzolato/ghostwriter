@@ -26,5 +26,8 @@ npm-debug.log*
 *.zip
 notarize.log
 
+# Large source video files (landing page uses .mp4 versions)
+*.mov
+
 # Local agent state
 .claude/
