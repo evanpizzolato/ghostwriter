@@ -1,0 +1,28 @@
+# Ghostwriter
+
+> A privacy-first notes app for presenters on macOS. Your notes stay invisible to screenshots, screen recordings, and screen shares.
+
+Ghostwriter is a lightweight macOS desktop application built for people who need to read from notes while presenting — during Zoom calls, Google Meet sessions, Microsoft Teams meetings, recorded talks, webinars, or in-person screen shares. The app's window content is excluded from the macOS window capture stream, so screenshots, screen recordings, and screen sharing tools see straight through it. Presenters see their notes; audiences do not.
+
+The app is designed to stay out of the way. It is always-on-top so it floats above slides or other content, supports a click-through mode so clicks pass through to the app behind it, and exposes global keyboard shortcuts so it can be controlled without focus. The editor itself is minimal and distraction-free.
+
+Ghostwriter requires macOS 12 (Monterey) or later and runs natively on both Intel and Apple Silicon Macs. It is free and open source under the GPL-3.0 license. There is no telemetry, no account, no third-party tracking — notes never leave the local machine.
+
+## Links
+
+- [Homepage](https://evanpizzolato.github.io/ghostwriter/)
+- [Download (.dmg)](https://github.com/evanpizzolato/ghostwriter/releases/latest/download/Ghostwriter.dmg)
+- [Source code on GitHub](https://github.com/evanpizzolato/ghostwriter)
+- [Latest release](https://github.com/evanpizzolato/ghostwriter/releases/latest)
+- [License (GPL-3.0)](https://spdx.org/licenses/GPL-3.0-only.html)
+- [Author — Evan Pizzolato](https://github.com/evanpizzolato)
+
+## Key facts
+
+- Name: Ghostwriter
+- Platform: macOS 12 or later (Intel and Apple Silicon)
+- Category: notes app, presenter tool, privacy tool
+- Price: Free
+- License: GPL-3.0
+- Source: Open source
+- Author: Evan Pizzolato
