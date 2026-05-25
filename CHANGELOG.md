@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.42.2 — 2026-05-25
+
+Editor paste + heading-formatting fixes.
+
+### Fixes
+- Pasting from external sources (browsers, Docs, Word) no longer dumps raw foreign styling into the editor. A new paste handler sanitizes incoming HTML: strips inline `style`/class/attrs, maps `<h1>`–`<h6>` onto the app's `heading1`–`heading4` blocks, converts `<p>`/`<div>` to body blocks, and preserves only `b/strong/i/em/u/br/span/a` inline tags. Plain-text paste falls through to line-split body blocks.
+- Re-picking a heading level on previously-pasted text now actually overrides the source styling. `applyStyleToBlock` clears `font-size`/`line-height`/`font-weight`/`font-family` from descendant inline spans so the block's style isn't shadowed by leftover formatting.
+- Pressing Return on a Heading 1 line no longer accidentally demotes the heading itself. The auto-demote-to-body logic now only fires when the cursor truly moved into a new block.
+- Restyling a block no longer bleeds into adjacent or nested blocks. `collectBlocksFromRange` returns innermost blocks only, and the descendant-style stripper skips elements that carry their own `data-font-style`.
+
 ## v0.41.0 — 2026-05-21
 
 Polish pass on cold-start visuals.

@@ -581,7 +581,11 @@ function collectBlocksFromRange(range, root) {
     blocks.push(walker.currentNode)
   }
 
-  return blocks
+  // Keep only innermost blocks: if an outer block also contains another
+  // collected block, restyling the outer would clobber the inner.
+  return blocks.filter((block) =>
+    !blocks.some((other) => other !== block && block.contains(other))
+  )
 }
 
 function applyStyleToBlock(block, style) {
@@ -591,6 +595,19 @@ function applyStyleToBlock(block, style) {
   block.style.fontSize = `${style.size}px`
   block.style.lineHeight = style.lineHeight
   block.style.fontWeight = style.weight
+
+  // Strip inline font sizing/weight from descendants (e.g. from pasted content)
+  // so the block's style isn't overridden by leftover spans. Skip elements
+  // that carry their own data-font-style — those are independently styled
+  // blocks and shouldn't be flattened by their container.
+  block.querySelectorAll('[style]').forEach((el) => {
+    if (el.dataset && el.dataset.fontStyle) return
+    el.style.removeProperty('font-size')
+    el.style.removeProperty('line-height')
+    el.style.removeProperty('font-weight')
+    el.style.removeProperty('font-family')
+    if (!el.getAttribute('style')) el.removeAttribute('style')
+  })
 }
 
 // Clean up old inline spans so they don't stretch line height when switching styles.
@@ -689,6 +706,192 @@ function applyFontStyle(style) {
   editor.dispatchEvent(new Event('input'))
 
   // Refresh toolbar selection immediately after applying the style.
+  updateToolbarStates()
+}
+
+// Map external/legacy heading tags to the app's predefined styles.
+const PASTE_HEADING_MAP = {
+  H1: 'heading1',
+  H2: 'heading2',
+  H3: 'heading3',
+  H4: 'heading4',
+  H5: 'heading4',
+  H6: 'heading4'
+}
+const PASTE_ALLOWED_INLINE = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR', 'SPAN', 'A'])
+const PASTE_ALLOWED_BLOCK = new Set(['DIV', 'P', 'UL', 'OL', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'])
+
+function buildStyledBlock(styleKey, innerHTML) {
+  const style = FONT_STYLE_LOOKUP[styleKey] || FONT_STYLE_LOOKUP.body
+  const block = document.createElement('div')
+  block.dataset.fontStyle = style.key
+  block.style.fontSize = `${style.size}px`
+  block.style.lineHeight = style.lineHeight
+  block.style.fontWeight = style.weight
+  block.innerHTML = innerHTML || '<br>'
+  return block
+}
+
+// Recursively sanitize a pasted node, returning a DocumentFragment of clean nodes.
+function sanitizePastedNode(node, doc) {
+  const frag = doc.createDocumentFragment()
+
+  node.childNodes.forEach((child) => {
+    if (child.nodeType === Node.TEXT_NODE) {
+      frag.appendChild(doc.createTextNode(child.textContent.replace(/\u200b+/g, '')))
+      return
+    }
+    if (child.nodeType !== Node.ELEMENT_NODE) return
+
+    const tag = child.tagName
+
+    if (PASTE_HEADING_MAP[tag]) {
+      const inner = sanitizePastedNode(child, doc)
+      const tempHost = doc.createElement('div')
+      tempHost.appendChild(inner)
+      frag.appendChild(buildStyledBlock(PASTE_HEADING_MAP[tag], tempHost.innerHTML))
+      return
+    }
+
+    if (tag === 'P' || tag === 'DIV') {
+      const inner = sanitizePastedNode(child, doc)
+      const tempHost = doc.createElement('div')
+      tempHost.appendChild(inner)
+      const html = tempHost.innerHTML.trim()
+      frag.appendChild(buildStyledBlock('body', html.length ? html : '<br>'))
+      return
+    }
+
+    if (tag === 'UL' || tag === 'OL') {
+      const list = doc.createElement(tag === 'UL' ? 'ul' : 'ol')
+      child.childNodes.forEach((li) => {
+        if (li.nodeType === Node.ELEMENT_NODE && li.tagName === 'LI') {
+          const liEl = doc.createElement('li')
+          const bodyStyle = FONT_STYLE_LOOKUP.body
+          liEl.dataset.fontStyle = 'body'
+          liEl.style.fontSize = `${bodyStyle.size}px`
+          liEl.style.lineHeight = bodyStyle.lineHeight
+          liEl.style.fontWeight = bodyStyle.weight
+          liEl.appendChild(sanitizePastedNode(li, doc))
+          list.appendChild(liEl)
+        }
+      })
+      if (list.childNodes.length) frag.appendChild(list)
+      return
+    }
+
+    if (tag === 'BR') {
+      frag.appendChild(doc.createElement('br'))
+      return
+    }
+
+    if (PASTE_ALLOWED_INLINE.has(tag)) {
+      // Normalize to canonical inline tags; drop attributes (including style).
+      const mapped = tag === 'STRONG' ? 'B' : tag === 'EM' ? 'I' : tag
+      const el = doc.createElement(mapped.toLowerCase())
+      el.appendChild(sanitizePastedNode(child, doc))
+      frag.appendChild(el)
+      return
+    }
+
+    // Unknown/unsupported element: keep its text content, drop the wrapper.
+    frag.appendChild(sanitizePastedNode(child, doc))
+  })
+
+  return frag
+}
+
+function sanitizePastedHtml(html) {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(`<div id="__paste_root">${html}</div>`, 'text/html')
+  const root = doc.getElementById('__paste_root')
+  if (!root) return doc.createDocumentFragment()
+
+  // Strip script/style nodes outright.
+  root.querySelectorAll('script, style, meta, link').forEach((n) => n.remove())
+
+  const fragment = sanitizePastedNode(root, document)
+
+  // If nothing top-level is a block, wrap loose inline content in a body block.
+  const wrapped = document.createDocumentFragment()
+  let inlineBuffer = null
+  const flushInline = () => {
+    if (!inlineBuffer) return
+    const tempHost = document.createElement('div')
+    tempHost.appendChild(inlineBuffer)
+    const html = tempHost.innerHTML.trim()
+    if (html.length) wrapped.appendChild(buildStyledBlock('body', html))
+    inlineBuffer = null
+  }
+
+  Array.from(fragment.childNodes).forEach((node) => {
+    const isBlock = node.nodeType === Node.ELEMENT_NODE
+      && PASTE_ALLOWED_BLOCK.has(node.tagName)
+    if (isBlock) {
+      flushInline()
+      wrapped.appendChild(node)
+    } else {
+      if (!inlineBuffer) inlineBuffer = document.createDocumentFragment()
+      inlineBuffer.appendChild(node)
+    }
+  })
+  flushInline()
+
+  return wrapped
+}
+
+function sanitizePastedPlainText(text) {
+  const fragment = document.createDocumentFragment()
+  const lines = text.replace(/\r\n/g, '\n').split('\n')
+  lines.forEach((line) => {
+    const html = line.length ? escapeHtml(line) : '<br>'
+    fragment.appendChild(buildStyledBlock('body', html))
+  })
+  return fragment
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+function handleEditorPaste(event) {
+  if (!editor) return
+  const clipboard = event.clipboardData
+  if (!clipboard) return
+
+  event.preventDefault()
+
+  const html = clipboard.getData('text/html')
+  const text = clipboard.getData('text/plain')
+  const fragment = html ? sanitizePastedHtml(html) : sanitizePastedPlainText(text || '')
+  if (!fragment.childNodes.length) return
+
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) {
+    editor.appendChild(fragment)
+  } else {
+    const range = selection.getRangeAt(0)
+    range.deleteContents()
+
+    const nodes = Array.from(fragment.childNodes)
+    range.insertNode(fragment)
+
+    // Place caret after the last inserted node.
+    const last = nodes[nodes.length - 1]
+    if (last) {
+      const newRange = document.createRange()
+      newRange.setStartAfter(last)
+      newRange.collapse(true)
+      selection.removeAllRanges()
+      selection.addRange(newRange)
+    }
+  }
+
+  normalizeEditorStructure(editor)
+  editor.dispatchEvent(new Event('input'))
   updateToolbarStates()
 }
 
@@ -1151,6 +1354,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       updateActiveNoteContent(editor.innerHTML)
     })
 
+    editor.addEventListener('paste', handleEditorPaste)
+
     // Refresh toolbar state whenever the selection changes via typing or clicking.
     editor.addEventListener('keyup', () => {
       updateToolbarStates()
@@ -1183,10 +1388,25 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     editor.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
-        const activeStyleKey = detectSelectionStyle()
-        if (activeStyleKey === 'heading1') {
+        const selection = window.getSelection()
+        const originalBlock = selection && selection.rangeCount > 0
+          ? findNearestBlock(selection.anchorNode, editor)
+          : null
+        if (originalBlock && originalBlock.dataset.fontStyle === 'heading1') {
           requestAnimationFrame(() => {
-            setFontSize('body')
+            // Only demote when the cursor truly moved into a new block.
+            // Chrome's default Enter sometimes inserts a <br> in the same
+            // block — restyling it would shrink the heading text itself.
+            const sel = window.getSelection()
+            if (!sel || sel.rangeCount === 0) return
+            const newBlock = findNearestBlock(sel.anchorNode, editor)
+            if (!newBlock || newBlock === originalBlock) return
+            applyStyleToBlock(newBlock, FONT_STYLE_LOOKUP.body)
+            currentFontStyle = 'body'
+            const dropdown = document.getElementById('font-size-select')
+            if (dropdown) dropdown.value = 'body'
+            editor.dispatchEvent(new Event('input'))
+            updateToolbarStates()
           })
         }
       }
