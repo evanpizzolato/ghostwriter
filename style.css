@@ -79,29 +79,18 @@
     box-shadow: inset 0 0 0 1.5px rgba(154, 65, 15, 0.45);
   }
 
-  /* Native sidebar vibrancy is active (window at 100% opacity): the page
-     goes transparent behind the sidebar so the macOS material shows. */
-  body.vibrancy {
-    background-color: transparent;
-  }
-
-  body.vibrancy .app-layout {
-    background-color: transparent;
-  }
-
-  body.vibrancy .sidebar {
-    background-color: transparent;
-    border-right-color: rgba(0, 0, 0, 0.07);
-  }
-
-  body.vibrancy .sidebar::after {
+  /* While the window is see-through (<100% opacity), swap the opaque
+     decorative gradient and row fills for translucent equivalents. */
+  body.translucent .sidebar::after {
     display: none;
   }
 
-  body.vibrancy .main-column,
-  body.vibrancy .content,
-  body.vibrancy #notes-wrapper {
-    background-color: var(--bg-primary);
+  body.translucent .note-item:not(.note-item--active):hover {
+    background-color: rgba(0, 0, 0, 0.07);
+  }
+
+  body.translucent .note-item--active {
+    background-color: rgba(0, 0, 0, 0.05);
   }
 
   .header {
@@ -462,12 +451,11 @@
   }
 
   /* ===== privacy toggle switch ===== */
-  /* Proportioned like NSSwitch: pill track with a circular knob. */
   .privacy-switch {
     position: relative;
     display: inline-block;
-    width: 34px;
-    height: 20px;
+    width: 36px;
+    height: 16px;
     margin-left: 8px;
     -webkit-app-region: no-drag;
   }
@@ -485,21 +473,20 @@
     right: 0;
     bottom: 0;
     background-color: var(--gray-300);
-    transition: background-color 0.2s ease;
-    border-radius: 20px;
+    transition: background-color 0.3s ease;
+    border-radius: 24px
   }
 
   .privacy-switch .slider:before {
     position: absolute;
     content: "";
-    height: 16px;
+    height: 10px;
     width: 16px;
-    left: 2px;
-    bottom: 2px;
+    left: 3px;
+    bottom: 3px;
     background-color: white;
-    transition: transform 0.2s ease;
-    border-radius: 50%;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+    border-radius: 8px;
   }
 
   .privacy-switch input:checked+.slider {

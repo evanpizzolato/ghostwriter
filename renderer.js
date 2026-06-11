@@ -1141,12 +1141,10 @@ function setFontSize(styleKey) {
 }
 
 // Adjust UI transparency as opacity changes from the slider, menu, or tray.
-// At 100% the window switches to native sidebar vibrancy (the page leaves the
-// sidebar transparent so the NSVisualEffectView material shows through);
-// below 100% vibrancy is dropped so the window is genuinely see-through.
 function updateOpacity(value) {
   currentOpacity = value
 
+  // For transparent window effect, we need to change the background alpha values
   const header = document.querySelector('.header')
   const controls = document.querySelector('.controls')
   const appLayout = document.querySelector('.app-layout')
@@ -1154,45 +1152,40 @@ function updateOpacity(value) {
   const notesWrapper = document.getElementById('notes-wrapper')
   const editor = document.getElementById('notes')
   const mainColumn = document.querySelector('.main-column')
+  const sidebar = document.querySelector('.sidebar')
 
-  const vibrancyOn = value >= 1
-  document.body.classList.toggle('vibrancy', vibrancyOn)
-  if (window.api?.setVibrancy) {
-    window.api.setVibrancy(vibrancyOn)
-  }
+  // Row highlights and the decorative gradient swap to translucent
+  // styles whenever the window is see-through.
+  document.body.classList.toggle('translucent', value < 1)
+
+  // Calculate the actual opacity for the notes area (minimum 40%)
+  const notesOpacity = Math.max(value, 0.4)
+
+  // Apply rgba backgrounds with the opacity value for window transparency
+  document.body.style.backgroundColor = `rgba(255, 255, 255, ${value * 0.95})`
 
   // Header and controls always fully opaque backgrounds
   header.style.backgroundColor = '#ffffff'
   controls.style.backgroundColor = '#ffffff'
 
-  if (vibrancyOn) {
-    // Clear inline overrides so the body.vibrancy CSS rules take effect.
-    document.body.style.backgroundColor = ''
-    if (appLayout) appLayout.style.backgroundColor = ''
-    content.style.backgroundColor = ''
-    if (mainColumn) mainColumn.style.backgroundColor = ''
-    notesWrapper.style.backgroundColor = ''
-  } else {
-    // Calculate the actual opacity for the notes area (minimum 40%)
-    const notesOpacity = Math.max(value, 0.4)
-
-    // Apply rgba backgrounds with the opacity value for window transparency
-    document.body.style.backgroundColor = `rgba(255, 255, 255, ${value * 0.95})`
-
-    if (appLayout) {
-      appLayout.style.backgroundColor = `rgba(255, 255, 255, ${value})`
-    }
-
-    // Content area with variable transparency
-    content.style.backgroundColor = `rgba(255, 255, 255, ${value})`
-
-    if (mainColumn) {
-      mainColumn.style.backgroundColor = `rgba(255, 255, 255, ${value})`
-    }
-
-    // Notes wrapper with minimum 40% opacity
-    notesWrapper.style.backgroundColor = `rgba(255, 255, 255, ${notesOpacity * 0.95})`
+  if (appLayout) {
+    appLayout.style.backgroundColor = `rgba(255, 255, 255, ${value})`
   }
+
+  // Content area with variable transparency
+  content.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+
+  if (mainColumn) {
+    mainColumn.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+  }
+
+  // Sidebar follows the slider too: solid white at 100%, see-through below.
+  if (sidebar) {
+    sidebar.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+  }
+
+  // Notes wrapper with minimum 40% opacity
+  notesWrapper.style.backgroundColor = `rgba(255, 255, 255, ${notesOpacity * 0.95})`
 
   // If opacity is very low, enhance text readability
   if (value < 0.4) {

@@ -1,12 +1,8 @@
 // Core Electron and Node imports used throughout the main process.
-const { app, BrowserWindow, ipcMain, Menu, globalShortcut, Tray, nativeImage, dialog, nativeTheme, screen } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu, globalShortcut, Tray, nativeImage, dialog, screen } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const { autoUpdater } = require('electron-updater')
-
-// The UI is light-only for now; pinning the theme keeps the sidebar vibrancy
-// material light even when the system is in dark mode.
-nativeTheme.themeSource = 'light'
 
 // =====  PRIVACY TOGGLE  =====
 // Tracks whether screenshots should be blocked; value is hydrated from disk before the window spins up.
@@ -717,9 +713,6 @@ function createWindow() {
     backgroundColor: '#00000000',
     visibleOnAllWorkspaces: true,
     titleBarStyle: 'hiddenInset',
-    // Native sidebar material shows through where the page leaves the
-    // sidebar transparent (only at 100% opacity — see 'set-vibrancy' IPC).
-    vibrancy: 'sidebar',
 
     resizable: true,
     minWidth: 642,
@@ -922,14 +915,6 @@ ipcMain.handle('is-window-fullscreen', () => {
     console.error('is-window-fullscreen error', error)
     return false
   }
-})
-
-// The renderer reports whether the window is fully opaque; vibrancy only
-// makes sense at 100% — below that the user wants to see *through* the
-// window, and the blurred material would block that.
-ipcMain.on('set-vibrancy', (event, on) => {
-  if (process.platform !== 'darwin' || !mainWindow || mainWindow.isDestroyed()) return
-  mainWindow.setVibrancy(on ? 'sidebar' : null)
 })
 
 // Right-click on a sidebar note row: native menu with destructive actions.

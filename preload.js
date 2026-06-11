@@ -30,9 +30,6 @@ contextBridge.exposeInMainWorld('api', {
   saveFile: (options) => ipcRenderer.invoke('save-file', options),
   openFile: (options) => ipcRenderer.invoke('open-file', options),
 
-  // Sidebar vibrancy follows the opacity slider (only on at 100%).
-  setVibrancy: (on) => ipcRenderer.send('set-vibrancy', !!on),
-
   // Native context menu for sidebar note rows.
   showNoteContextMenu: (noteId) => ipcRenderer.send('show-note-context-menu', noteId),
   onDeleteNoteRequest: (callback) => ipcRenderer.on('delete-note-request', callback),
