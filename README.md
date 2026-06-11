@@ -2,8 +2,10 @@
 
 Privacy-focused notes that stay hidden from screenshots and screen shares.
 
-[![Latest release](https://img.shields.io/github/v/release/evanpizzolato/ghostwriter?label=release&cacheSeconds=3600)](https://github.com/evanpizzolato/ghostwriter/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/evanpizzolato/ghostwriter/total?cacheSeconds=3600)](https://github.com/evanpizzolato/ghostwriter/releases)
+<!-- Static badges only: shields.io's GitHub-API badges fail intermittently
+     ("Unable to select next GitHub token from pool"). Bump the release badge
+     version as part of the publish flow. -->
+[![Latest release](https://img.shields.io/badge/release-v0.43.0-orange)](https://github.com/evanpizzolato/ghostwriter/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-macOS%2012%2B-blue)](https://github.com/evanpizzolato/ghostwriter/releases/latest)
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
