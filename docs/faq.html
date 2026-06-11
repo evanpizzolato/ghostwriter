@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Ghostwriter FAQ — Hiding notes from screen sharing on macOS</title>
+  <meta name="description" content="Answers to common questions about Ghostwriter: how it hides notes from Zoom, Google Meet, and Teams screen shares, what macOS versions it supports, where notes are stored, and how to install it." />
+
+  <link rel="canonical" href="https://evanpizzolato.github.io/ghostwriter/faq.html" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="author" content="Evan Pizzolato" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Ghostwriter" />
+  <meta property="og:title" content="Ghostwriter FAQ — Hiding notes from screen sharing on macOS" />
+  <meta property="og:description" content="How Ghostwriter keeps presenter notes invisible to screenshots, recordings, and screen shares on macOS." />
+  <meta property="og:url" content="https://evanpizzolato.github.io/ghostwriter/faq.html" />
+  <meta property="og:image" content="https://evanpizzolato.github.io/ghostwriter/og.png" />
+
+  <link rel="icon" type="image/png" href="icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --text-primary: #1d2127;
+      --text-dim: rgba(29, 33, 39, 0.6);
+      --text-meta: rgba(29, 33, 39, 0.5);
+      --border-soft: #e1e1e1;
+      --bg: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      font-feature-settings: "cv11", "ss01";
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 24px 20px 64px;
+    }
+    .topbar { display: flex; align-items: center; gap: 12px; }
+    .topbar img { width: 44px; height: 44px; transform: rotate(4.45deg); }
+    .brand-name {
+      font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 500;
+      font-size: 15px;
+      letter-spacing: -0.15px;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+    h1 {
+      margin-top: 36px;
+      font-weight: 600;
+      font-size: 28px;
+      line-height: 115%;
+      letter-spacing: -0.8px;
+      text-wrap: balance;
+    }
+    .intro {
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight: 450;
+      line-height: 1.6;
+      letter-spacing: -0.15px;
+      color: var(--text-dim);
+    }
+    h2 {
+      margin-top: 36px;
+      font-weight: 600;
+      font-size: 16px;
+      letter-spacing: -0.3px;
+    }
+    p, li {
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: 450;
+      line-height: 1.65;
+      letter-spacing: -0.15px;
+      color: var(--text-dim);
+    }
+    strong { font-weight: 525; color: var(--text-primary); }
+    a { color: var(--text-primary); }
+    code {
+      font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      padding: 2px 6px;
+      background: rgba(29, 33, 39, 0.06);
+      border-radius: 5px;
+    }
+    .back {
+      display: inline-block;
+      margin-top: 48px;
+      font-size: 13px;
+      font-weight: 525;
+      letter-spacing: -0.15px;
+    }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is Ghostwriter?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Ghostwriter is a free, open-source notes app for macOS built for presenters. It is an always-on-top notes overlay with a Privacy mode that keeps your notes invisible to screenshots, screen recordings, and screen shares, so you can read from them during calls without your audience seeing them."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does Ghostwriter hide my notes from screen sharing?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Privacy mode uses macOS OS-level content protection, which excludes the Ghostwriter window from the system's screen-capture stream. Any tool that captures the screen through macOS capture APIs — screen sharing, screen recording, or screenshots — sees straight through the window while you still see your notes normally."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Ghostwriter work with Zoom, Google Meet, and Microsoft Teams?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Zoom, Google Meet, Microsoft Teams, OBS, QuickTime recordings, and macOS screenshots all capture the screen through macOS capture APIs, so with Privacy mode on, Ghostwriter's window is invisible to all of them. Note that anyone physically looking at your screen, or a mirrored external display, can still see your notes — content protection applies to capture, not to your own display."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do my notes ever leave my Mac?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Ghostwriter has no account, no telemetry, and no third-party tracking. Notes are saved automatically to a local file on your Mac and never leave the machine."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is Ghostwriter free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Ghostwriter is free and open source under the GPL-3.0 license. The source code is available on GitHub."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What macOS versions does Ghostwriter support?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Ghostwriter requires macOS 12 (Monterey) or later and ships as a universal app that runs natively on both Intel and Apple Silicon Macs. The app is signed and notarized by Apple."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I install Ghostwriter?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Download the DMG from the website or GitHub releases, or install with Homebrew: brew install --cask evanpizzolato/tap/ghostwriter. The app updates itself automatically once installed."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I keep Ghostwriter on top of my slides while presenting?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The window is always-on-top, supports opacity presets so it can sit semi-transparently over your content, and has a click-through mode (Cmd+Shift+T) that lets clicks pass through to whatever is behind it. Global shortcuts let you show, hide, and adjust the window without switching focus."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a href="https://evanpizzolato.github.io/ghostwriter/"><img src="icon.png" alt="Ghostwriter app icon" /></a>
+      <a class="brand-name" href="https://evanpizzolato.github.io/ghostwriter/">ghostwriter</a>
+    </header>
+
+    <h1>Frequently asked questions</h1>
+    <p class="intro">How Ghostwriter keeps presenter notes invisible to screen sharing, recordings, and screenshots on macOS.</p>
+
+    <h2>What is Ghostwriter?</h2>
+    <p><strong>Ghostwriter is a free, open-source notes app for macOS built for presenters.</strong> It is an always-on-top notes overlay with a Privacy mode that keeps your notes invisible to screenshots, screen recordings, and screen shares, so you can read from them during calls without your audience seeing them.</p>
+
+    <h2>How does Ghostwriter hide my notes from screen sharing?</h2>
+    <p>Privacy mode uses <strong>macOS OS-level content protection</strong>, which excludes the Ghostwriter window from the system's screen-capture stream. Any tool that captures the screen through macOS capture APIs — screen sharing, screen recording, or screenshots — sees straight through the window while you still see your notes normally.</p>
+
+    <h2>Does Ghostwriter work with Zoom, Google Meet, and Microsoft Teams?</h2>
+    <p>Yes. <strong>Zoom, Google Meet, Microsoft Teams, OBS, QuickTime recordings, and macOS screenshots</strong> all capture the screen through macOS capture APIs, so with Privacy mode on, Ghostwriter's window is invisible to all of them. Note that anyone physically looking at your screen, or a mirrored external display, can still see your notes — content protection applies to capture, not to your own display.</p>
+
+    <h2>Do my notes ever leave my Mac?</h2>
+    <p>No. Ghostwriter has <strong>no account, no telemetry, and no third-party tracking</strong>. Notes are saved automatically to a local file on your Mac and never leave the machine.</p>
+
+    <h2>Is Ghostwriter free?</h2>
+    <p>Yes. Ghostwriter is <strong>free and open source</strong> under the GPL-3.0 license. The <a href="https://github.com/evanpizzolato/ghostwriter">source code is on GitHub</a>.</p>
+
+    <h2>What macOS versions does Ghostwriter support?</h2>
+    <p>Ghostwriter requires <strong>macOS 12 (Monterey) or later</strong> and ships as a universal app that runs natively on both Intel and Apple Silicon Macs. The app is signed and notarized by Apple.</p>
+
+    <h2>How do I install Ghostwriter?</h2>
+    <p><a href="https://github.com/evanpizzolato/ghostwriter/releases/latest/download/Ghostwriter.dmg">Download the DMG</a>, or install with Homebrew: <code>brew install --cask evanpizzolato/tap/ghostwriter</code>. The app updates itself automatically once installed.</p>
+
+    <h2>Can I keep Ghostwriter on top of my slides while presenting?</h2>
+    <p>Yes. The window is <strong>always-on-top</strong>, supports opacity presets so it can sit semi-transparently over your content, and has a <strong>click-through mode</strong> (<code>Cmd+Shift+T</code>) that lets clicks pass through to whatever is behind it. Global shortcuts let you show, hide, and adjust the window without switching focus.</p>
+
+    <a class="back" href="https://evanpizzolato.github.io/ghostwriter/">&larr; Back to Ghostwriter</a>
+  </main>
+</body>
+</html>

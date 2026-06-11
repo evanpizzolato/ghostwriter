@@ -11,6 +11,7 @@ Ghostwriter requires macOS 12 (Monterey) or later and runs natively on both Inte
 ## Links
 
 - [Homepage](https://evanpizzolato.github.io/ghostwriter/)
+- [FAQ](https://evanpizzolato.github.io/ghostwriter/faq.html)
 - [Download (.dmg)](https://github.com/evanpizzolato/ghostwriter/releases/latest/download/Ghostwriter.dmg)
 - [Source code on GitHub](https://github.com/evanpizzolato/ghostwriter)
 - [Latest release](https://github.com/evanpizzolato/ghostwriter/releases/latest)
