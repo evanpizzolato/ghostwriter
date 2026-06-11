@@ -2,7 +2,26 @@
 
 Privacy-focused notes that stay hidden from screenshots and screen shares.
 
+[![Latest release](https://img.shields.io/github/v/release/evanpizzolato/ghostwriter?label=release)](https://github.com/evanpizzolato/ghostwriter/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/evanpizzolato/ghostwriter/total)](https://github.com/evanpizzolato/ghostwriter/releases)
+[![Platform](https://img.shields.io/badge/platform-macOS%2010.15%2B-blue)](https://github.com/evanpizzolato/ghostwriter/releases/latest)
+[![License](https://img.shields.io/github/license/evanpizzolato/ghostwriter)](LICENSE)
+
+![Ghostwriter — privacy-focused notes for macOS](docs/og.png)
+
 Ghostwriter is an always-on-top notes overlay for macOS. It supports transparency, a collapsible sidebar, and a floating formatting toolbar. Notes auto-save and can be hidden from screen captures with OS-level content protection. Built with Electron; ships as a signed, notarized universal DMG with in-app auto-updates via electron-updater.
+
+## Install
+
+**[Download Ghostwriter.dmg](https://github.com/evanpizzolato/ghostwriter/releases/latest/download/Ghostwriter.dmg)** — universal (Apple Silicon + Intel), signed and notarized, auto-updates built in.
+
+Or with [Homebrew](https://brew.sh):
+
+```bash
+brew install --cask evanpizzolato/tap/ghostwriter
+```
+
+More at the [website](https://evanpizzolato.github.io/ghostwriter/).
 
 ## Editor Experience
 
