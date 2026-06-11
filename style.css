@@ -54,13 +54,13 @@
 -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Hairline edge so the frameless window reads as a native mac window. */
+  /* Overlay reserved for the click-through indicator; invisible otherwise
+     (macOS draws the window edge itself — no fake border needed). */
   body::after {
     content: '';
     position: fixed;
     inset: 0;
     border-radius: 10px;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
     pointer-events: none;
     z-index: 1000;
   }
@@ -71,7 +71,6 @@
 
   body.window-fullscreen::after {
     border-radius: 0;
-    box-shadow: none;
   }
 
   /* Click-through mode: tint the window edge instead of pulsing a glow. */
