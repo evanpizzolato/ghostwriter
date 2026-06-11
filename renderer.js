@@ -16,8 +16,8 @@ const TRASH_ICON_SVG = `
 
 // Predefined text styles exposed in the toolbar dropdown.
 const FONT_STYLES = [
-  { key: 'body', label: 'Body', size: 13, lineHeight: 1.5, weight: 400 },
-  { key: 'heading4', label: 'Heading 4', size: 15, lineHeight: 1.2, weight: 500 },
+  { key: 'body', label: 'Body', size: 15, lineHeight: 1.5, weight: 400 },
+  { key: 'heading4', label: 'Heading 4', size: 17, lineHeight: 1.2, weight: 500 },
   { key: 'heading3', label: 'Heading 3', size: 18, lineHeight: 1.2, weight: 500 },
   { key: 'heading2', label: 'Heading 2', size: 20, lineHeight: 1.2, weight: 500 },
   { key: 'heading1', label: 'Heading 1', size: 24, lineHeight: 1.2, weight: 600 }
@@ -29,43 +29,43 @@ const FONT_STYLE_LOOKUP = FONT_STYLES.reduce((map, style) => {
 const BLOCK_TAGS = new Set(['DIV', 'P', 'LI'])
 const DEFAULT_GUIDE_CONTENT = `
 <div data-font-style="heading1" style="margin-bottom: 16px; font-size:24px;line-height:1.2;font-weight:600;">Ghostwriter quickstart</div>
-<div data-font-style="body" style="margin-bottom: 16px; font-size:13px;line-height:1.5;font-weight:400;">Ghostwriter is a lightweight, always-on-top notes window for Mac. Notes save automatically and stay out of screenshots when Privacy is on.</div>
+<div data-font-style="body" style="margin-bottom: 16px; font-size:15px;line-height:1.5;font-weight:400;">Ghostwriter is a lightweight, always-on-top notes window for Mac. Notes save automatically and stay out of screenshots when Privacy is on.</div>
 <div data-font-style="heading2" style="margin-bottom: 16px; font-size:20px;line-height:1.2;font-weight:500;">Basics</div>
 <ul style="margin-bottom: 16px;">
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Type in the editor on the right; everything auto-saves.</li>
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Notes are listed on the left; click a title to switch.</li>
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Use the pencil icon to create a new blank note.</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Type in the editor on the right; everything auto-saves.</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Notes are listed on the left; click a title to switch.</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Use the pencil icon to create a new blank note.</li>
 </ul>
 <div data-font-style="heading2" style="margin-bottom: 16px; font-size:20px;line-height:1.2;font-weight:500;">Text styling</div>
-<div data-font-style="body" style="margin-bottom: 16px; font-size:13px;line-height:1.5;font-weight:400;">Choose Body or Heading from the dropdown. Toolbar buttons mirror these shortcuts:</div>
+<div data-font-style="body" style="margin-bottom: 16px; font-size:15px;line-height:1.5;font-weight:400;">Choose Body or Heading from the dropdown. Toolbar buttons mirror these shortcuts:</div>
 <ul style="margin-bottom: 16px;">
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Bold: Cmd+B</li>
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Italic: Cmd+I</li>
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Underline: Cmd+U</li>
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Bulleted list: Cmd+L</li>
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Numbered list: Cmd+D</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Bold: Cmd+B</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Italic: Cmd+I</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Underline: Cmd+U</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Bulleted list: Shift+Cmd+7</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Numbered list: Shift+Cmd+9</li>
 </ul>
 <div data-font-style="heading2" style="margin-bottom: 16px; font-size:20px;line-height:1.2;font-weight:500;">Sidebar & notes</div>
 <ul style="margin-bottom: 16px;">
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Use the sidebar toggle (top left) to show or hide the list.</li>
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Active note shows in blue; timestamps update when you edit.</li>
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Delete a note with the trash icon beside its title.</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Use the sidebar toggle (top left) to show or hide the list.</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Active note shows in blue; timestamps update when you edit.</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Delete a note with the trash icon beside its title.</li>
 </ul>
 <div data-font-style="heading2" style="margin-bottom: 16px; font-size:20px;line-height:1.2;font-weight:500;">Privacy & window</div>
 <ul style="margin-bottom: 16px;">
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Privacy switch hides content from screenshots.</li>
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Opacity slider (bottom) adjusts transparency without hiding text.</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Privacy switch hides content from screenshots.</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Opacity slider (bottom) adjusts transparency without hiding text.</li>
 </ul>
 <div data-font-style="heading2" style="margin-bottom: 16px; font-size:20px;line-height:1.2;font-weight:500;">Shortcuts</div>
 <ul style="margin-bottom: 16px;">
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Toggle sidebar: Option+Cmd+S</li>
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Undo / Redo: Cmd+Z / Shift+Cmd+Z</li>
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Formatting: Cmd+B, Cmd+I, Cmd+U, Cmd+L, Cmd+D</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Toggle sidebar: Option+Cmd+S</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Undo / Redo: Cmd+Z / Shift+Cmd+Z</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Formatting: Cmd+B, Cmd+I, Cmd+U, Shift+Cmd+7, Shift+Cmd+9</li>
 </ul>
 <div data-font-style="heading3" style="margin-bottom: 16px; font-size:18px;line-height:1.2;font-weight:500;">Tips</div>
 <ul style="margin-bottom: 16px;">
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Switching notes is an easy way to confirm your work saved.</li>
-  <li data-font-style="body" style="font-size:13px;line-height:1.5;font-weight:400;">Use headings to break sections and lists for talking points.</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Switching notes is an easy way to confirm your work saved.</li>
+  <li data-font-style="body" style="font-size:15px;line-height:1.5;font-weight:400;">Use headings to break sections and lists for talking points.</li>
 </ul>
 `
 
@@ -101,27 +101,66 @@ let toolbarShowTimeout = null
 
 
 
-// Trigger a browser download with the provided content and filename.
-function downloadFile(content, filename, type = 'text/plain') {
-  const blob = new Blob([content], { type })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+// Replace the in-memory notes with an imported JSON backup payload.
+function applyImportedBackup(data) {
+  if (Array.isArray(data.notes)) {
+    const imported = prepareNotes(data.notes)
+    notes = imported.notes
+    sortNotesByUpdated()
+
+    if (data.activeNoteId && notes.some(note => note.id === data.activeNoteId)) {
+      activeNoteId = data.activeNoteId
+    } else {
+      activeNoteId = notes[0]?.id ?? null
+    }
+
+    if (!notes.length) {
+      const now = new Date().toISOString()
+      notes.push({
+        id: generateNoteId(),
+        content: '',
+        createdAt: now,
+        updatedAt: now,
+        title: FALLBACK_NOTE_TITLE
+      })
+      activeNoteId = notes[0].id
+    }
+
+    if (editor) {
+      const activeNote = getActiveNote()
+      editor.innerHTML = activeNote ? activeNote.content : ''
+      normalizeEditorStructure(editor)
+      updateHeaderTitle(activeNote)
+    }
+
+    renderNotesList()
+    updateToolbarStates()
+    persistStateImmediate()
+  } else if (typeof data.notes === 'string') {
+    applyImportedText(data.notes)
+  }
 }
 
-// Read an uploaded file as text so it can be imported into the app.
-function readFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target.result)
-    reader.onerror = reject
-    reader.readAsText(file)
-  })
+// Load imported text/HTML content into the active note (creating one if needed).
+function applyImportedText(content) {
+  if (!getActiveNote()) {
+    const now = new Date().toISOString()
+    notes = [{
+      id: generateNoteId(),
+      content: '',
+      createdAt: now,
+      updatedAt: now,
+      title: FALLBACK_NOTE_TITLE
+    }]
+    activeNoteId = notes[0].id
+  }
+
+  if (editor) {
+    editor.innerHTML = content
+    normalizeEditorStructure(editor)
+    updateActiveNoteContent(editor.innerHTML)
+    focusEditorAtEnd()
+  }
 }
 
 // Pull the first non-empty line out of the HTML content to use as a sidebar title.
@@ -359,6 +398,14 @@ function renderNotesList() {
 
     item.addEventListener('click', () => {
       selectNote(note.id)
+    })
+
+    // Right-click opens a native context menu (built in the main process).
+    item.addEventListener('contextmenu', (event) => {
+      event.preventDefault()
+      if (window.api?.showNoteContextMenu) {
+        window.api.showNoteContextMenu(note.id)
+      }
     })
 
     item.appendChild(selectButton)
@@ -613,6 +660,16 @@ function applyStyleToBlock(block, style) {
 // Clean up old inline spans so they don't stretch line height when switching styles.
 function normalizeEditorStructure(root = document.getElementById('notes')) {
   if (!root) return
+
+  // Re-apply the current style definitions to every styled block so content
+  // saved under older size values (e.g. 13px body text) migrates on load.
+  root.querySelectorAll('div[data-font-style], p[data-font-style], li[data-font-style]').forEach((block) => {
+    const style = FONT_STYLE_LOOKUP[block.dataset.fontStyle]
+    if (!style) return
+    block.style.fontSize = `${style.size}px`
+    block.style.lineHeight = style.lineHeight
+    block.style.fontWeight = style.weight
+  })
 
   root.querySelectorAll('span[data-font-style]').forEach((span) => {
     const styleKey = span.dataset.fontStyle
@@ -1084,10 +1141,12 @@ function setFontSize(styleKey) {
 }
 
 // Adjust UI transparency as opacity changes from the slider, menu, or tray.
+// At 100% the window switches to native sidebar vibrancy (the page leaves the
+// sidebar transparent so the NSVisualEffectView material shows through);
+// below 100% vibrancy is dropped so the window is genuinely see-through.
 function updateOpacity(value) {
   currentOpacity = value
 
-  // For transparent window effect, we need to change the background alpha values
   const header = document.querySelector('.header')
   const controls = document.querySelector('.controls')
   const appLayout = document.querySelector('.app-layout')
@@ -1096,35 +1155,44 @@ function updateOpacity(value) {
   const editor = document.getElementById('notes')
   const mainColumn = document.querySelector('.main-column')
 
-  // Calculate the actual opacity for the notes area (minimum 40%)
-  const notesOpacity = Math.max(value, 0.4)
-
-  // Apply rgba backgrounds with the opacity value for window transparency
-  document.body.style.backgroundColor = `rgba(255, 255, 255, ${value * 0.95})`
+  const vibrancyOn = value >= 1
+  document.body.classList.toggle('vibrancy', vibrancyOn)
+  if (window.api?.setVibrancy) {
+    window.api.setVibrancy(vibrancyOn)
+  }
 
   // Header and controls always fully opaque backgrounds
   header.style.backgroundColor = '#ffffff'
   controls.style.backgroundColor = '#ffffff'
 
-  if (appLayout) {
-    appLayout.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+  if (vibrancyOn) {
+    // Clear inline overrides so the body.vibrancy CSS rules take effect.
+    document.body.style.backgroundColor = ''
+    if (appLayout) appLayout.style.backgroundColor = ''
+    content.style.backgroundColor = ''
+    if (mainColumn) mainColumn.style.backgroundColor = ''
+    notesWrapper.style.backgroundColor = ''
+  } else {
+    // Calculate the actual opacity for the notes area (minimum 40%)
+    const notesOpacity = Math.max(value, 0.4)
+
+    // Apply rgba backgrounds with the opacity value for window transparency
+    document.body.style.backgroundColor = `rgba(255, 255, 255, ${value * 0.95})`
+
+    if (appLayout) {
+      appLayout.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+    }
+
+    // Content area with variable transparency
+    content.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+
+    if (mainColumn) {
+      mainColumn.style.backgroundColor = `rgba(255, 255, 255, ${value})`
+    }
+
+    // Notes wrapper with minimum 40% opacity
+    notesWrapper.style.backgroundColor = `rgba(255, 255, 255, ${notesOpacity * 0.95})`
   }
-
-  // Content area with variable transparency
-  content.style.backgroundColor = `rgba(255, 255, 255, ${value})`
-
-  if (mainColumn) {
-    mainColumn.style.backgroundColor = `rgba(255, 255, 255, ${value})`
-  }
-
-  // Notes wrapper with minimum 40% opacity
-  notesWrapper.style.backgroundColor = `rgba(255, 255, 255, ${notesOpacity * 0.95})`
-
-    // NEW: Apply opacity to toolbar
-    // const toolbar = document.querySelector('.text-toolbar')
-    // if (toolbar) {
-    //   toolbar.style.backgroundColor = `rgba(255, 255, 255, ${value})`
-    // }
 
   // If opacity is very low, enhance text readability
   if (value < 0.4) {
@@ -1414,6 +1482,14 @@ window.addEventListener('DOMContentLoaded', async () => {
       const cmdKey = isMac ? e.metaKey : e.ctrlKey
       if (!cmdKey) return
 
+      // List shortcuts follow Notes.app: ⇧⌘7 bulleted, ⇧⌘9 numbered.
+      // Checked via e.code because Shift changes e.key on digit rows.
+      if (e.shiftKey && (e.code === 'Digit7' || e.code === 'Digit9')) {
+        e.preventDefault()
+        insertListItem(e.code === 'Digit7' ? 'bullet' : 'number')
+        return
+      }
+
       switch (e.key.toLowerCase()) {
         case 'z': {
           // Support undo/redo shortcuts in the editor.
@@ -1434,6 +1510,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           break
         }
         case 'b':
+          if (e.shiftKey) break
           if (selectionContainsHeading()) {
             e.preventDefault()
             break
@@ -1442,20 +1519,15 @@ window.addEventListener('DOMContentLoaded', async () => {
           insertTextFormat('bold')
           break
         case 'i':
+          // Shift+Cmd+I belongs to File > Import Notes.
+          if (e.shiftKey) break
           e.preventDefault()
           insertTextFormat('italic')
           break
         case 'u':
+          if (e.shiftKey) break
           e.preventDefault()
           insertTextFormat('underline')
-          break
-        case 'l':
-          e.preventDefault()
-          insertListItem('bullet')
-          break
-        case 'd':
-          e.preventDefault()
-          insertListItem('number')
           break
       }
     })
@@ -1507,102 +1579,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   updateToolbarVisibility()
 
-  // Hidden file input reused for the plain-text and JSON import flows.
-  const fileInput = document.createElement('input')
-  fileInput.type = 'file'
-  fileInput.style.display = 'none'
-  document.body.appendChild(fileInput)
-
-  fileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-
-    try {
-      const content = await readFile(file)
-
-      if (file.name.endsWith('.json')) {
-        const data = JSON.parse(content)
-
-        if (Array.isArray(data.notes)) {
-          const imported = prepareNotes(data.notes)
-          notes = imported.notes
-          sortNotesByUpdated()
-
-          if (data.activeNoteId && notes.some(note => note.id === data.activeNoteId)) {
-            activeNoteId = data.activeNoteId
-          } else {
-            activeNoteId = notes[0]?.id ?? null
-          }
-
-          if (!notes.length) {
-            const now = new Date().toISOString()
-            notes.push({
-              id: generateNoteId(),
-              content: '',
-              createdAt: now,
-              updatedAt: now,
-              title: FALLBACK_NOTE_TITLE
-            })
-            activeNoteId = notes[0].id
-          }
-
-          if (editor) {
-            const activeNote = getActiveNote()
-            editor.innerHTML = activeNote ? activeNote.content : ''
-            normalizeEditorStructure(editor)
-            updateHeaderTitle(activeNote)
-          }
-
-          renderNotesList()
-          updateToolbarStates()
-          persistStateImmediate()
-        } else if (typeof data.notes === 'string') {
-          if (!getActiveNote()) {
-            const now = new Date().toISOString()
-            notes = [{
-              id: generateNoteId(),
-              content: '',
-              createdAt: now,
-              updatedAt: now,
-              title: FALLBACK_NOTE_TITLE
-            }]
-            activeNoteId = notes[0].id
-          }
-
-          if (editor) {
-            editor.innerHTML = data.notes
-            normalizeEditorStructure(editor)
-            updateActiveNoteContent(editor.innerHTML)
-            focusEditorAtEnd()
-          }
-        }
-      } else {
-        if (!getActiveNote()) {
-          const now = new Date().toISOString()
-          notes = [{
-            id: generateNoteId(),
-            content: '',
-            createdAt: now,
-            updatedAt: now,
-            title: FALLBACK_NOTE_TITLE
-          }]
-          activeNoteId = notes[0].id
-        }
-
-        if (editor) {
-          editor.innerHTML = content
-          normalizeEditorStructure(editor)
-          updateActiveNoteContent(editor.innerHTML)
-          focusEditorAtEnd()
-        }
-      }
-    } catch (error) {
-      console.error('Import failed:', error)
-    } finally {
-      fileInput.value = ''
-    }
-  })
-
   if (privacyCheckbox) {
     // Keep the badge and persisted state in sync when privacy toggle flips.
     privacyCheckbox.addEventListener('change', async (e) => {
@@ -1613,18 +1589,25 @@ window.addEventListener('DOMContentLoaded', async () => {
     })
   }
 
-  // Export/import handlers register callbacks exposed via preload.
+  // Export/import flows go through native save/open dialogs in the main process.
   window.api.onExportNotes(async () => {
     const activeNote = getActiveNote()
     if (!activeNote) return
 
     const timestamp = new Date().toISOString().split('T')[0]
-    downloadFile(activeNote.content, `presenter-notes-${timestamp}.md`, 'text/markdown')
+    await window.api.saveFile({
+      defaultPath: `presenter-notes-${timestamp}.md`,
+      filters: [{ name: 'Markdown', extensions: ['md'] }],
+      content: activeNote.content
+    })
   })
 
-  window.api.onImportNotes(() => {
-    fileInput.accept = '.txt,.md,.markdown'
-    fileInput.click()
+  window.api.onImportNotes(async () => {
+    const file = await window.api.openFile({
+      filters: [{ name: 'Text & Markdown', extensions: ['txt', 'md', 'markdown'] }]
+    })
+    if (!file) return
+    applyImportedText(file.content)
   })
 
   window.api.onExportBackup(async () => {
@@ -1634,13 +1617,31 @@ window.addEventListener('DOMContentLoaded', async () => {
       exportedAt: timestamp
     }
 
-    downloadFile(JSON.stringify(payload, null, 2), `notes-backup-${timestamp.split('T')[0]}.json`, 'application/json')
+    await window.api.saveFile({
+      defaultPath: `notes-backup-${timestamp.split('T')[0]}.json`,
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      content: JSON.stringify(payload, null, 2)
+    })
   })
 
-  window.api.onImportBackup(() => {
-    fileInput.accept = '.json'
-    fileInput.click()
+  window.api.onImportBackup(async () => {
+    const file = await window.api.openFile({
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    })
+    if (!file) return
+    try {
+      applyImportedBackup(JSON.parse(file.content))
+    } catch (error) {
+      console.error('Import failed:', error)
+    }
   })
+
+  // Sidebar context menu → Delete Note round-trips through the main process.
+  if (window.api.onDeleteNoteRequest) {
+    window.api.onDeleteNoteRequest((event, noteId) => {
+      deleteNote(noteId)
+    })
+  }
 
   if (stateChanged) {
     persistStateImmediate()

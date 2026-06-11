@@ -51,7 +51,9 @@ More at the [website](https://evanpizzolato.github.io/ghostwriter/).
 - `Cmd+Shift+T` — toggle click-through
 - `Cmd+Shift+Plus` / `Cmd+Shift+-` — font size
 - `Opt+Cmd+S` — toggle sidebar
-- `Cmd+B / I / U / L / D` — bold, italic, underline, bullet list, numbered list
+- `Cmd+B / I / U` — bold, italic, underline
+- `Shift+Cmd+7 / Shift+Cmd+9` — bullet list, numbered list
+- `Shift+Cmd+E / Shift+Cmd+I` — export / import notes
 
 ## Data and Persistence
 

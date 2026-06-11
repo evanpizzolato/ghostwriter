@@ -1,8 +1,12 @@
 // Core Electron and Node imports used throughout the main process.
-const { app, BrowserWindow, ipcMain, Menu, globalShortcut, Tray, nativeImage, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu, globalShortcut, Tray, nativeImage, dialog, nativeTheme, screen } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const { autoUpdater } = require('electron-updater')
+
+// The UI is light-only for now; pinning the theme keeps the sidebar vibrancy
+// material light even when the system is in dark mode.
+nativeTheme.themeSource = 'light'
 
 // =====  PRIVACY TOGGLE  =====
 // Tracks whether screenshots should be blocked; value is hydrated from disk before the window spins up.
@@ -116,6 +120,49 @@ function persistNotesState(updates = {}) {
 }
 
 loadNotesState()
+
+
+// =====  WINDOW STATE  =====
+// Remember window size/position between launches, like native mac apps do.
+const windowStatePath = path.join(userDataPath, 'window-state.json')
+
+function loadWindowState() {
+  try {
+    const state = JSON.parse(fs.readFileSync(windowStatePath, 'utf8'))
+    if (state && Number.isFinite(state.width) && Number.isFinite(state.height)) {
+      return state
+    }
+  } catch (error) {
+    // Missing or corrupt state file — fall back to defaults.
+  }
+  return null
+}
+
+function saveWindowState() {
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isFullScreen()) return
+  try {
+    fs.writeFileSync(windowStatePath, JSON.stringify(mainWindow.getNormalBounds()))
+  } catch (error) {
+    console.error('saveWindowState error', error)
+  }
+}
+
+let windowStateSaveTimeout
+function scheduleWindowStateSave() {
+  clearTimeout(windowStateSaveTimeout)
+  windowStateSaveTimeout = setTimeout(saveWindowState, 500)
+}
+
+// Only restore a saved position if it still lands on a connected display.
+function positionIsVisible(state) {
+  if (!Number.isFinite(state.x) || !Number.isFinite(state.y)) return false
+  return screen.getAllDisplays().some(({ workArea }) =>
+    state.x >= workArea.x - state.width + 100 &&
+    state.x <= workArea.x + workArea.width - 100 &&
+    state.y >= workArea.y &&
+    state.y <= workArea.y + workArea.height - 100
+  )
+}
 
 
 // =====  AUTO-UPDATER  =====
@@ -468,7 +515,7 @@ function createMenu() {
       submenu: [
         {
           label: 'Export Notes...',
-            accelerator: 'Cmd+E',
+            accelerator: 'Shift+Cmd+E',
             click: async () => {
               if (mainWindow) {
                 mainWindow.webContents.send('export-notes')
@@ -477,7 +524,7 @@ function createMenu() {
           },
           {
             label: 'Import Notes...',
-            accelerator: 'Cmd+I',
+            accelerator: 'Shift+Cmd+I',
             click: async () => {
               if (mainWindow) {
                 mainWindow.webContents.send('import-notes')
@@ -638,11 +685,11 @@ function createMenu() {
           enabled: false
         },
         {
-          label: '  Bullet List: Cmd+L',
+          label: '  Bullet List: Shift+Cmd+7',
           enabled: false
         },
         {
-          label: '  Number List: Cmd+D',
+          label: '  Number List: Shift+Cmd+9',
           enabled: false
         }
       ]
@@ -656,9 +703,12 @@ function createMenu() {
 // Spawn the always-on-top presenter window with our HTML/CSS UI.
 // Spin up the main BrowserWindow that hosts the entire presenter notes UI.
 function createWindow() {
+  const savedState = loadWindowState()
+
   mainWindow = new BrowserWindow({
-    width: 728,
-    height: 600,
+    width: savedState?.width ?? 728,
+    height: savedState?.height ?? 600,
+    ...(savedState && positionIsVisible(savedState) ? { x: savedState.x, y: savedState.y } : {}),
     show: false,
 
     frame: false,
@@ -667,6 +717,9 @@ function createWindow() {
     backgroundColor: '#00000000',
     visibleOnAllWorkspaces: true,
     titleBarStyle: 'hiddenInset',
+    // Native sidebar material shows through where the page leaves the
+    // sidebar transparent (only at 100% opacity — see 'set-vibrancy' IPC).
+    vibrancy: 'sidebar',
 
     resizable: true,
     minWidth: 642,
@@ -680,6 +733,10 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js')
     }
   })
+
+  mainWindow.on('resize', scheduleWindowStateSave)
+  mainWindow.on('move', scheduleWindowStateSave)
+  mainWindow.on('close', saveWindowState)
 
   // Keep the window fully invisible until the renderer signals it has
   // hydrated notes and laid out the UI. Avoids the cold-start flash where
@@ -728,7 +785,39 @@ function createWindow() {
   mainWindow.webContents.on('context-menu', (event, params) => {
     if (!params.isEditable) return
 
-    const menu = Menu.buildFromTemplate([
+    const template = []
+
+    // Surface the native spellchecker: correction guesses + Add to Dictionary.
+    if (params.misspelledWord) {
+      params.dictionarySuggestions.slice(0, 5).forEach((suggestion) => {
+        template.push({
+          label: suggestion,
+          click: () => mainWindow.webContents.replaceMisspelling(suggestion)
+        })
+      })
+      if (!params.dictionarySuggestions.length) {
+        template.push({ label: 'No Guesses Found', enabled: false })
+      }
+      template.push(
+        {
+          label: 'Add to Dictionary',
+          click: () => mainWindow.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord)
+        },
+        { type: 'separator' }
+      )
+    } else if (params.selectionText.trim()) {
+      const snippet = params.selectionText.trim()
+      const label = snippet.length > 30 ? `${snippet.slice(0, 30)}…` : snippet
+      template.push(
+        {
+          label: `Look Up “${label}”`,
+          click: () => mainWindow.webContents.showDefinitionForSelection()
+        },
+        { type: 'separator' }
+      )
+    }
+
+    template.push(
       { role: 'undo', enabled: params.editFlags.canUndo },
       { role: 'redo', enabled: params.editFlags.canRedo },
       { type: 'separator' },
@@ -737,9 +826,9 @@ function createWindow() {
       { role: 'paste', enabled: params.editFlags.canPaste },
       { type: 'separator' },
       { role: 'selectAll', enabled: params.editFlags.canSelectAll }
-    ])
+    )
 
-    menu.popup({ window: mainWindow })
+    Menu.buildFromTemplate(template).popup({ window: mainWindow })
   })
 
   // Watch for fullscreen entry so the renderer can adjust layout spacing on macOS.
@@ -832,6 +921,58 @@ ipcMain.handle('is-window-fullscreen', () => {
   } catch (error) {
     console.error('is-window-fullscreen error', error)
     return false
+  }
+})
+
+// The renderer reports whether the window is fully opaque; vibrancy only
+// makes sense at 100% — below that the user wants to see *through* the
+// window, and the blurred material would block that.
+ipcMain.on('set-vibrancy', (event, on) => {
+  if (process.platform !== 'darwin' || !mainWindow || mainWindow.isDestroyed()) return
+  mainWindow.setVibrancy(on ? 'sidebar' : null)
+})
+
+// Right-click on a sidebar note row: native menu with destructive actions.
+ipcMain.on('show-note-context-menu', (event, noteId) => {
+  if (!mainWindow || typeof noteId !== 'string') return
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'Delete Note',
+      click: () => mainWindow.webContents.send('delete-note-request', noteId)
+    }
+  ])
+  menu.popup({ window: mainWindow })
+})
+
+// Native save sheet for exports (replaces the old anchor-click blob download).
+ipcMain.handle('save-file', async (event, { defaultPath, filters, content } = {}) => {
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      defaultPath: typeof defaultPath === 'string' ? defaultPath : undefined,
+      filters: Array.isArray(filters) ? filters : undefined
+    })
+    if (result.canceled || !result.filePath) return false
+    fs.writeFileSync(result.filePath, String(content ?? ''), 'utf8')
+    return true
+  } catch (error) {
+    console.error('save-file error', error)
+    return false
+  }
+})
+
+// Native open panel for imports (replaces the hidden <input type="file">).
+ipcMain.handle('open-file', async (event, { filters } = {}) => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: Array.isArray(filters) ? filters : undefined
+    })
+    if (result.canceled || !result.filePaths.length) return null
+    const filePath = result.filePaths[0]
+    return { name: path.basename(filePath), content: fs.readFileSync(filePath, 'utf8') }
+  } catch (error) {
+    console.error('open-file error', error)
+    return null
   }
 })
 

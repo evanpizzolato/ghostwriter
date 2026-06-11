@@ -26,6 +26,17 @@ contextBridge.exposeInMainWorld('api', {
   onExportBackup: (callback) => ipcRenderer.on('export-backup', callback),
   onImportBackup: (callback) => ipcRenderer.on('import-backup', callback),
 
+  // Native file dialogs backing the import/export flows.
+  saveFile: (options) => ipcRenderer.invoke('save-file', options),
+  openFile: (options) => ipcRenderer.invoke('open-file', options),
+
+  // Sidebar vibrancy follows the opacity slider (only on at 100%).
+  setVibrancy: (on) => ipcRenderer.send('set-vibrancy', !!on),
+
+  // Native context menu for sidebar note rows.
+  showNoteContextMenu: (noteId) => ipcRenderer.send('show-note-context-menu', noteId),
+  onDeleteNoteRequest: (callback) => ipcRenderer.on('delete-note-request', callback),
+
   // Window state helpers
   getFullscreenState: () => ipcRenderer.invoke('is-window-fullscreen'),
   onFullscreenChanged: (callback) => ipcRenderer.on('window-fullscreen-changed', callback),

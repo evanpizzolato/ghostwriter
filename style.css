@@ -54,6 +54,56 @@
 -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Hairline edge so the frameless window reads as a native mac window. */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  body.window-fullscreen {
+    border-radius: 0;
+  }
+
+  body.window-fullscreen::after {
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* Click-through mode: tint the window edge instead of pulsing a glow. */
+  body.click-through::after {
+    box-shadow: inset 0 0 0 1.5px rgba(154, 65, 15, 0.45);
+  }
+
+  /* Native sidebar vibrancy is active (window at 100% opacity): the page
+     goes transparent behind the sidebar so the macOS material shows. */
+  body.vibrancy {
+    background-color: transparent;
+  }
+
+  body.vibrancy .app-layout {
+    background-color: transparent;
+  }
+
+  body.vibrancy .sidebar {
+    background-color: transparent;
+    border-right-color: rgba(0, 0, 0, 0.07);
+  }
+
+  body.vibrancy .sidebar::after {
+    display: none;
+  }
+
+  body.vibrancy .main-column,
+  body.vibrancy .content,
+  body.vibrancy #notes-wrapper {
+    background-color: var(--bg-primary);
+  }
+
   .header {
     background-color: rgba(255, 255, 255, 1);
     /* Fully opaque */
@@ -63,6 +113,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    position: relative;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .header h1 {
@@ -81,6 +135,11 @@
     transform: translateY(-1px);
   }
 
+  /* Traffic lights are hidden in fullscreen — reclaim their reserved space. */
+  body.window-fullscreen .header-left {
+    margin-left: 0;
+  }
+
   .header-sidebar-toggle,
   .header-new-note-button {
     -webkit-app-region: no-drag;
@@ -93,7 +152,6 @@
     border: none;
     background: transparent;
     border-radius: 6px;
-    cursor: pointer;
     padding: 0;
     transition: background-color 0.15s ease, scale 0.12s ease;
   }
@@ -145,7 +203,6 @@
   }
 
   .header-new-note-button[disabled] {
-    cursor: not-allowed;
     opacity: 0.4;
   }
 
@@ -153,18 +210,20 @@
     background-color: transparent;
   }
 
+  /* Centered semibold title, like a native macOS titlebar. */
   .note-title-display {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     font-size: 13px;
-    font-weight: 400;
-    height: 16px;
-    padding-top: 2px;
+    font-weight: 600;
     color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     -webkit-app-region: drag;
     line-height: 1;
-    max-width: 240px;
+    max-width: 200px;
   }
 
   .app-layout {
@@ -186,6 +245,8 @@
     flex-direction: column;
     position: relative;
     overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .sidebar::after {
@@ -231,7 +292,6 @@
     transition: background-color 0.2s ease, color 0.2s ease;
     /* Transparent left border reserves the same 3px so active/inactive text stays aligned. */
     border-left: 3px solid transparent;
-    cursor: pointer;
   }
 
   .note-item:not(.note-item--active):hover {
@@ -255,7 +315,6 @@
     font-size: 13px;
     line-height: 1;
     color: inherit;
-    cursor: pointer;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -293,7 +352,6 @@
     border-radius: 5px;
     background: transparent;
     color: var(--gray-700);
-    cursor: pointer;
     opacity: 0;
     transition: opacity 0.2s ease, scale 0.12s ease;
   }
@@ -317,20 +375,14 @@
     pointer-events: none;
   }
 
-  /* Placeholder copy when there are no notes yet. */
+  /* Placeholder copy when there are no notes yet — centered, secondary label. */
   .note-list-empty {
-    margin-top: 12px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--text-secondary);
-    font-size: 12px;
-  }
-
-  .note-list::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .note-list::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 3px;
+    font-size: 13px;
   }
 
   .main-column {
@@ -410,11 +462,12 @@
   }
 
   /* ===== privacy toggle switch ===== */
+  /* Proportioned like NSSwitch: pill track with a circular knob. */
   .privacy-switch {
     position: relative;
     display: inline-block;
-    width: 36px;
-    height: 16px;
+    width: 34px;
+    height: 20px;
     margin-left: 8px;
     -webkit-app-region: no-drag;
   }
@@ -427,26 +480,26 @@
 
   .privacy-switch .slider {
     position: absolute;
-    cursor: pointer;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     background-color: var(--gray-300);
-    transition: background-color 0.3s ease;
-    border-radius: 24px
+    transition: background-color 0.2s ease;
+    border-radius: 20px;
   }
 
   .privacy-switch .slider:before {
     position: absolute;
     content: "";
-    height: 10px;
+    height: 16px;
     width: 16px;
-    left: 3px;
-    bottom: 3px;
+    left: 2px;
+    bottom: 2px;
     background-color: white;
-    transition: transform 0.3s ease;
-    border-radius: 8px;
+    transition: transform 0.2s ease;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 
   .privacy-switch input:checked+.slider {
@@ -455,25 +508,6 @@
 
   .privacy-switch input:checked+.slider:before {
     transform: translateX(14px)
-  }
-
-  /* Click-through mode styling */
-  body.click-through {
-    animation: click-through-pulse 2s infinite;
-  }
-
-  @keyframes click-through-pulse {
-
-    0%,
-    100% {
-      border-color: var(--bg-tertiary);
-      box-shadow: 0 0 10px rgba(255, 165, 0, 0.3);
-    }
-
-    50% {
-      border-color: var(--bg-tertiary);
-      box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
-    }
   }
 
   /* 
@@ -531,6 +565,8 @@
     pointer-events: none;
     transform: translateY(6px);
     transition: opacity 0.12s ease, transform 0.12s ease;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .toolbar-wrapper.toolbar-active {
@@ -569,7 +605,6 @@
     font-size: 13px;
     line-height: 1.4;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    cursor: pointer;
     outline: none;
     appearance: none;
     -webkit-appearance: none;
@@ -612,7 +647,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
     padding: 0;
     transition: background-color 0.1s ease, scale 0.12s ease;
     margin: 2px 1px 2px 1px;
@@ -659,7 +693,6 @@
     color: var(--blue-primary);
     font-size: 13px;
     font-weight: 500;
-    cursor: pointer;
     padding: 0 8px;
     height: 32px;
     margin-left: auto;
@@ -734,18 +767,6 @@
     margin-bottom: 0;
   }
 
-  #notes:empty:before {
-    content: attr(data-placeholder);
-    color: var(--text-secondary);
-    pointer-events: none;
-    white-space: pre-wrap;
-  }
-
-
-  #notes::placeholder {
-    color: var(--text-secondary);
-  }
-
   /* Controls bar */
   .controls {
     display: flex;
@@ -757,6 +778,8 @@
     /* Fully opaque */
     border-top: 1px solid var(--bg-tertiary);
     -webkit-app-region: no-drag;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .control-group {
@@ -789,7 +812,6 @@
     background: white;
     border-radius: 8px;
     border: 0.5px solid rgba(0, 0, 0, 0.02);
-    cursor: pointer;
     box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.08);
     transition: transform 0.2s ease;
   }
@@ -814,7 +836,6 @@
     height: 14px;
     background: #ffffff;
     border-radius: 8px;
-    cursor: pointer;
     box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.05), 0 2px 4px 0 rgba(0, 0, 0, 0.1);
     transition: transform 0.2s ease;
   }
@@ -833,20 +854,3 @@
 
 
 
-  /* Custom scrollbar for textarea */
-  #notes::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  #notes::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  #notes::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 3px;
-  }
-
-  #notes::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.2);
-  }

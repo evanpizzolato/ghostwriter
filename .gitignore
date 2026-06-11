@@ -31,3 +31,6 @@ notarize.log
 
 # Local agent state
 .claude/
+
+# Local working notes (not for the public repo)
+design-notes/*.local.md
