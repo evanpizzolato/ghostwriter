@@ -2,10 +2,10 @@
 
 Privacy-focused notes that stay hidden from screenshots and screen shares.
 
-[![Latest release](https://img.shields.io/github/v/release/evanpizzolato/ghostwriter?label=release)](https://github.com/evanpizzolato/ghostwriter/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/evanpizzolato/ghostwriter/total)](https://github.com/evanpizzolato/ghostwriter/releases)
-[![Platform](https://img.shields.io/badge/platform-macOS%2010.15%2B-blue)](https://github.com/evanpizzolato/ghostwriter/releases/latest)
-[![License](https://img.shields.io/github/license/evanpizzolato/ghostwriter)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/evanpizzolato/ghostwriter?label=release&cacheSeconds=3600)](https://github.com/evanpizzolato/ghostwriter/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/evanpizzolato/ghostwriter/total?cacheSeconds=3600)](https://github.com/evanpizzolato/ghostwriter/releases)
+[![Platform](https://img.shields.io/badge/platform-macOS%2012%2B-blue)](https://github.com/evanpizzolato/ghostwriter/releases/latest)
+[![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
 ![Ghostwriter — privacy-focused notes for macOS](docs/og.png)
 

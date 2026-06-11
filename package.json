@@ -1,6 +1,6 @@
 {
   "name": "ghostwriter",
-  "version": "0.42.2",
+  "version": "0.43.0",
   "description": "Privacy-focused notes that stay hidden from screenshots and screen shares",
   "main": "main.js",
   "scripts": {
