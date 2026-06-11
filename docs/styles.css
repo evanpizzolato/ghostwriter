@@ -247,6 +247,20 @@ body {
   color: var(--text-meta);
 }
 
+.brew-line {
+  margin-top: 2px;
+}
+
+.brew-cmd {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  padding: 2px 6px;
+  background: rgba(29, 33, 39, 0.06);
+  border-radius: 5px;
+  user-select: all;
+  -webkit-user-select: all;
+}
+
 /* ---------- Description ---------- */
 .description {
   margin-top: auto;
